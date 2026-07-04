@@ -514,5 +514,49 @@
  "830b307a02b268d2": {
   "voice": "en-US-JennyNeural",
   "text": "Hello! Welcome to Sunshine Middle School."
+ },
+ "7884e1f334b9a9e2": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是数学时间,加油!"
+ },
+ "93e027b9dfef347e": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是英语时间,加油!"
+ },
+ "c737fe1f68050cc5": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是语文时间,加油!"
+ },
+ "3556d46c4d397754": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是历史时间,加油!"
+ },
+ "8293d5d67de7dcbb": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是地理时间,加油!"
+ },
+ "2b7c20c56b028d7e": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是生物时间,加油!"
+ },
+ "ac5b0896e9082d49": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是道法时间,加油!"
+ },
+ "88086be627ab1bab": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "接下来是复习时间,加油!"
+ },
+ "740ba8daf21ab7e4": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "点击单词卡,先听发音,再翻面记住意思。每个单词都要读三遍哦。"
+ },
+ "35bb91931b30bfbc": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "动手试一试,点按钮看看温度计的变化。"
+ },
+ "b9048ea62a2f8657": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "动手试一试,点按钮移动数轴上的小球。"
  }
 }

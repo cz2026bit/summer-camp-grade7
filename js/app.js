@@ -930,57 +930,150 @@
     return data.sections.reduce((n, s) => n + s.units.filter(u => u.q).length, 0);
   }
 
+  // ---------- 多邻国式翻页:把一天的内容切成一页页的小卡片 ----------
+  let dayPages = [], pageIdx = 0, currentDay = null, currentData = null;
+  const MAJOR_BLOCKS = ["lesson", "flashcards", "reading", "foldableReading", "thermometer", "numberline"];
+
+  function buildPages(data) {
+    const pages = [];
+    data.sections.forEach((sec, si) => {
+      pages.push({ type: "cover", sec });
+      sec.units.forEach((u, ui) => {
+        const key = si + "-" + ui;
+        let minors = [];
+        let firstOfUnit = true;
+        const pushContent = blocks => {
+          pages.push({ type: "content", sec, unit: u, key, blocks, showUnitName: firstOfUnit });
+          firstOfUnit = false;
+        };
+        (u.blocks || []).forEach(b => {
+          if (MAJOR_BLOCKS.includes(b.type)) { pushContent(minors.concat([b])); minors = []; }
+          else minors.push(b);
+        });
+        if (u.q) {
+          // 剩余的小块(如 BOSS 规则说明)贴在题目页上方
+          pages.push({ type: "question", sec, unit: u, key, q: u.q, preBlocks: minors, showUnitName: firstOfUnit });
+          minors = [];
+        } else if (minors.length) {
+          pushContent(minors);
+        }
+      });
+    });
+    return pages;
+  }
+
   function renderDay(day) {
-    window.scrollTo(0, 0);
     TTS.stop();
     const data = window.DAYS[day];
     if (!data) return renderHome();
+    currentDay = day; currentData = data;
     dayStartTime = Date.now();
     lastAnswerTime = Date.now();
     dayAnswers = {}; combo = 0; maxCombo = 0;
-    const totalQ = countQuestions(data);
+    dayPages = buildPages(data);
+    pageIdx = 0;
+    renderPage();
+  }
 
-    let html = `
-      <div class="day-header no-copy">
-        <h1>${esc(data.title)}</h1>
-        <div class="meta">⏱️ ${esc(data.estimate)} · 🎬 每个蓝框都是一部带配音的动画小课,记得开声音!</div>
+  // ---------- 完成一页的奖励动画 ----------
+  const PRAISES = [["⭐", "太棒了!"], ["🎉", "真厉害!"], ["🔥", "恩恩冲鸭!"], ["💪", "就是这样!"], ["🌟", "学霸气质!"], ["🚀", "继续冲!"], ["🏄", "越学越顺!"]];
+  function pageReward() {
+    const pick = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+    const el = document.createElement("div");
+    el.className = "page-reward";
+    el.innerHTML = `<div class="pr-emoji">${pick[0]}</div><div class="pr-text">${pick[1]}</div>`;
+    document.body.appendChild(el);
+    if (pageIdx % 5 === 0) { confetti(26); SFX.badge(); } else { confetti(8); SFX.correct(); }
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  // 每页进入时自动播放的语音
+  function pageAutoText(p) {
+    if (p.type === "cover") return "接下来是" + subLabel(p.sec.subject) + "时间,加油!";
+    if (p.type !== "content") return null;
+    const major = p.blocks.find(b => MAJOR_BLOCKS.includes(b.type));
+    if (!major) return null;
+    if (major.type === "flashcards") return "点击单词卡,先听发音,再翻面记住意思。每个单词都要读三遍哦。";
+    if (major.type === "thermometer") return "动手试一试,点按钮看看温度计的变化。";
+    if (major.type === "numberline") return "动手试一试,点按钮移动数轴上的小球。";
+    if ((major.type === "reading" || major.type === "foldableReading") && major.speakable) return major.paragraphs.join(" ");
+    return null; // lesson 页由动画课堂自动播放
+  }
+
+  function renderPage() {
+    window.scrollTo(0, 0);
+    TTS.stop();
+    const total = dayPages.length;
+    const p = dayPages[pageIdx];
+    const pct = Math.round((pageIdx + 1) / total * 100);
+    const isLast = pageIdx === total - 1;
+    const answered = p.type !== "question" || !!dayAnswers[p.key];
+
+    let body = "";
+    if (p.type === "cover") {
+      body = `<div class="section-card ${p.sec.subject} cover-page no-copy">
+        <div class="cover-icon">${p.sec.icon}</div>
+        <h2 style="justify-content:center">${esc(p.sec.title)}</h2>
+        <div class="cover-meta"><span class="tag ${p.sec.subject}">${subLabel(p.sec.subject)}</span> · 预计 ${p.sec.minutes} 分钟</div>
+        <div class="cover-line">准备好了吗?点「继续」开始!</div>
       </div>`;
-
-    data.sections.forEach((sec, si) => {
-      html += `<div class="section-card ${sec.subject} no-copy">
-        <h2>${sec.icon} ${esc(sec.title)} <span class="tag ${sec.subject}">${subLabel(sec.subject)}</span></h2>
-        <div class="section-meta">预计 ${sec.minutes} 分钟</div>`;
-      sec.units.forEach((u, ui) => {
-        const key = si + "-" + ui;
-        html += `<div class="unit">
-          <div class="unit-name">📍 ${esc(u.name)}</div>
-          ${u.blocks.map((b, bi) => renderBlock(b, key + "-" + bi)).join("")}
-          ${u.q ? renderInlineQuestion(u.q, key, sec.subject) : ""}
-        </div>`;
-      });
-      html += `</div>`;
-    });
-
-    html += `
-      <div class="quiz-sticky">
-        <div class="finish-bar">
-          <span id="progress-chip" class="progress-chip">已闯 0 / ${totalQ} 题</span>
-          <span id="combo-chip" class="combo-chip" style="display:none"></span>
-          <button class="btn btn-success btn-big" id="btn-finish">完成闯关,领取战利品 🎁</button>
-        </div>
+    } else if (p.type === "content") {
+      body = `<div class="section-card ${p.sec.subject} page-card no-copy">
+        <div class="unit-name">📍 ${esc(p.unit.name)}${p.showUnitName ? "" : " · 续"}</div>
+        ${p.blocks.map((b, bi) => renderBlock(b, "pg-" + bi)).join("")}
       </div>`;
-    app.innerHTML = html;
+    } else {
+      body = `<div class="section-card ${p.sec.subject} page-card no-copy">
+        <div class="unit-name">📍 ${esc(p.unit.name)}</div>
+        ${(p.preBlocks || []).map((b, bi) => renderBlock(b, "pre-" + bi)).join("")}
+        ${renderInlineQuestion(p.q, p.key, p.sec.subject)}
+      </div>`;
+    }
+
+    app.innerHTML = `
+      <div class="page-top no-copy">
+        <button class="btn btn-ghost-dark page-exit" id="btn-exit" title="退出本关">✕</button>
+        <div class="page-progress"><div style="width:${pct}%"></div></div>
+        <span class="page-count">${pageIdx + 1}/${total}</span>
+        <span id="combo-chip" class="combo-chip" style="display:${combo >= 2 ? "" : "none"}">🔥 ×${combo}</span>
+      </div>
+      ${body}
+      <div class="page-nav">
+        <button class="btn btn-outline" id="btn-prev" ${pageIdx === 0 ? "disabled" : ""}>←</button>
+        <button class="btn ${isLast ? "btn-success" : "btn-primary"} btn-big page-next" id="btn-next" ${answered ? "" : "disabled"}>
+          ${isLast ? "完成闯关,领取战利品 🎁" : p.type === "question" && !answered ? "答完题才能继续哦" : "继续 →"}</button>
+      </div>`;
 
     bindWidgets();
-    // 绑定动画课堂
-    data.sections.forEach((sec, si) => sec.units.forEach((u, ui) =>
-      u.blocks.forEach((b, bi) => {
-        if (b.type !== "lesson") return;
-        const el = app.querySelector(`[data-lesson="${si}-${ui}-${bi}"]`);
-        if (el) createLessonPlayer(el, b.steps);
-      })));
-    bindInlineQuestions(day, data, totalQ);
     bindAntiCopy();
+
+    if (p.type === "content") {
+      p.blocks.forEach((b, bi) => {
+        if (b.type !== "lesson") return;
+        const el = app.querySelector(`[data-lesson="pg-${bi}"]`);
+        if (el) createLessonPlayer(el, b.steps, { autoplay: true });
+      });
+      const autoText = pageAutoText(p);
+      if (autoText) TTS.speak(autoText, guessLang(autoText));
+    } else if (p.type === "cover") {
+      TTS.speak(pageAutoText(p), "zh");
+    } else {
+      bindQuestionPage(p);
+    }
+
+    document.getElementById("btn-exit").onclick = () => {
+      if (confirm("要退出本关吗?本关的答题进度不会保存哦。")) renderHome();
+    };
+    document.getElementById("btn-prev").onclick = () => {
+      if (pageIdx > 0) { pageIdx--; renderPage(); }
+    };
+    document.getElementById("btn-next").onclick = () => {
+      if (p.type === "question" && !dayAnswers[p.key]) return;
+      if (isLast) { finishDay(currentDay, currentData); return; }
+      pageIdx++;
+      pageReward();
+      renderPage();
+    };
   }
 
   function bindAntiCopy() {
@@ -1105,105 +1198,118 @@
     </div>`;
   }
 
-  function bindInlineQuestions(day, data, totalQ) {
-    const qMap = {};
-    data.sections.forEach((sec, si) => {
-      sec.units.forEach((u, ui) => { if (u.q) qMap[si + "-" + ui] = { q: u.q, unitName: u.name, subject: sec.subject }; });
+  function feedbackHTML(q, correct) {
+    return `
+      <div class="q-result ${correct ? "ok" : "no"}">
+        ${correct ? `🎉 ${q.boss ? "BOSS 被你击败了!" : "回答正确!"}+${q.points} XP` : `💪 这道题有点难,正确答案:<b>${esc(q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0])}</b>`}
+        <div class="explain">💡 ${esc(q.explain)}</div>
+      </div>
+      ${q.explainSteps ? `<div class="lesson-player explain-lesson">${lessonPlayerHTML("名师动画讲解(强烈建议看一遍)", "听懂讲解,下次遇到同类题就是送分题 🎁")}</div>` : ""}`;
+  }
+
+  // 翻回已答过的题目页:还原锁定状态
+  function restoreAnswered(qEl, q, rec) {
+    qEl.classList.add("locked", rec.correct ? "correct" : "wrong");
+    if (q.type === "choice") {
+      qEl.querySelectorAll(".option").forEach((o, i) => {
+        if (i === q.answer) o.classList.add("right-ans");
+        else if (i === rec.oi && !rec.correct) o.classList.add("wrong-pick");
+      });
+    } else {
+      const inp = qEl.querySelector(".fill-input");
+      inp.value = rec.userAns === "(未作答)" ? "" : rec.userAns;
+      inp.disabled = true;
+    }
+    qEl.querySelector(".q-submit-row").style.display = "none";
+    qEl.querySelector(".q-feedback").innerHTML = feedbackHTML(q, rec.correct);
+    if (q.explainSteps) createLessonPlayer(qEl.querySelector(".q-feedback .explain-lesson"), q.explainSteps);
+  }
+
+  function bindQuestionPage(p) {
+    const q = p.q, key = p.key;
+    const qEl = app.querySelector(".inline-q");
+    if (!qEl) return;
+
+    if (q.demoSteps) {
+      createLessonPlayer(qEl.querySelector(".question-demo"), q.demoSteps);
+    }
+
+    const optText = q.type === "choice" ? q.options.map((o, i) => "ABCD"[i] + ". " + o).join(". ") : "";
+    const speakQ = () => { TTS.stop(); TTS.speak(q.q + ". " + optText, q.voice || guessLang(q.q + optText)); };
+    qEl.querySelector(".q-voice").addEventListener("click", e => { e.stopPropagation(); speakQ(); });
+
+    // 已答过(翻页回看):直接还原
+    if (dayAnswers[key]) { restoreAnswered(qEl, q, dayAnswers[key]); return; }
+
+    // 进入题目页自动朗读题目
+    speakQ();
+
+    qEl.querySelectorAll(".option").forEach(opt => {
+      opt.addEventListener("click", () => {
+        if (qEl.classList.contains("locked")) return;
+        qEl.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+      });
     });
 
-    app.querySelectorAll(".inline-q").forEach(qEl => {
-      const key = qEl.dataset.key;
-      const info = qMap[key];
-      const q = info.q;
-
-      if (q.demoSteps) {
-        createLessonPlayer(qEl.querySelector(".question-demo"), q.demoSteps);
+    qEl.querySelector(".q-submit").addEventListener("click", (ev) => {
+      if (qEl.classList.contains("locked")) return;
+      let userAns, correct, oi = -1;
+      if (q.type === "choice") {
+        const sel = qEl.querySelector(".option.selected");
+        if (!sel) { alert("先选一个答案再提交哦!"); return; }
+        oi = parseInt(sel.dataset.oi, 10);
+        userAns = "ABCD"[oi] + ". " + q.options[oi];
+        correct = oi === q.answer;
+        qEl.querySelectorAll(".option").forEach((o, i) => {
+          if (i === q.answer) o.classList.add("right-ans");
+          else if (o.classList.contains("selected") && !correct) o.classList.add("wrong-pick");
+        });
+      } else {
+        const val = qEl.querySelector(".fill-input").value.trim();
+        if (!val) { alert("先填写答案再提交哦!"); return; }
+        userAns = val;
+        correct = isFillCorrect(q, val);
+        qEl.querySelector(".fill-input").disabled = true;
       }
 
-      qEl.querySelector(".q-voice").addEventListener("click", e => {
-        e.stopPropagation();
-        TTS.stop();
-        const optText = q.type === "choice" ? q.options.map((o, i) => "ABCD"[i] + ". " + o).join(". ") : "";
-        TTS.speak(q.q + ". " + optText, q.voice || guessLang(q.q + optText));
-      });
+      const now = Date.now();
+      const elapsed = (now - lastAnswerTime) / 1000;
+      lastAnswerTime = now;
+      const fast = correct && elapsed < 12;
 
-      qEl.querySelectorAll(".option").forEach(opt => {
-        opt.addEventListener("click", () => {
-          if (qEl.classList.contains("locked")) return;
-          qEl.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
-          opt.classList.add("selected");
-        });
-      });
+      if (correct) {
+        combo += 1; maxCombo = Math.max(maxCombo, combo);
+        if (q.boss) { SFX.boss(); confetti(40); } else { SFX.correct(); if (combo >= 2) confetti(12); }
+        const rect = ev.target.getBoundingClientRect();
+        floatTip(`+${q.points} XP${combo >= 2 ? "  COMBO ×" + combo : ""}`, rect.left + 40, rect.top - 10, "tip-xp");
+        const cc = document.getElementById("combo-chip");
+        if (combo >= 2) { cc.style.display = ""; cc.textContent = `🔥 ×${combo}`; }
+      } else {
+        combo = 0;
+        SFX.wrong();
+        document.getElementById("combo-chip").style.display = "none";
+      }
 
-      qEl.querySelector(".q-submit").addEventListener("click", (ev) => {
-        if (qEl.classList.contains("locked")) return;
-        let userAns, correct;
-        if (q.type === "choice") {
-          const sel = qEl.querySelector(".option.selected");
-          if (!sel) { alert("先选一个答案再提交哦!"); return; }
-          const oi = parseInt(sel.dataset.oi, 10);
-          userAns = "ABCD"[oi] + ". " + q.options[oi];
-          correct = oi === q.answer;
-          qEl.querySelectorAll(".option").forEach((o, i) => {
-            if (i === q.answer) o.classList.add("right-ans");
-            else if (o.classList.contains("selected") && !correct) o.classList.add("wrong-pick");
-          });
-        } else {
-          const val = qEl.querySelector(".fill-input").value.trim();
-          if (!val) { alert("先填写答案再提交哦!"); return; }
-          userAns = val;
-          correct = isFillCorrect(q, val);
-          qEl.querySelector(".fill-input").disabled = true;
-        }
+      qEl.classList.add("locked", correct ? "correct" : "wrong");
+      qEl.querySelector(".q-submit-row").style.display = "none";
+      qEl.querySelector(".q-feedback").innerHTML = feedbackHTML(q, correct);
+      if (q.explainSteps) {
+        createLessonPlayer(qEl.querySelector(".q-feedback .explain-lesson"), q.explainSteps, { autoplay: !correct });
+      }
 
-        const now = Date.now();
-        const elapsed = (now - lastAnswerTime) / 1000;
-        lastAnswerTime = now;
-        const fast = correct && elapsed < 12;
+      dayAnswers[key] = {
+        subject: p.sec.subject, unitName: p.unit.name, q: q.q, points: q.points,
+        correct: correct, userAns: userAns, oi: oi, boss: !!q.boss, fast: fast, seconds: Math.round(elapsed),
+        rightAns: q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0],
+        explain: q.explain
+      };
 
-        if (correct) {
-          combo += 1; maxCombo = Math.max(maxCombo, combo);
-          if (q.boss) { SFX.boss(); confetti(40); } else { SFX.correct(); if (combo >= 2) confetti(12); }
-          const rect = ev.target.getBoundingClientRect();
-          floatTip(`+${q.points} XP${combo >= 2 ? "  COMBO ×" + combo : ""}`, rect.left + 40, rect.top - 10, "tip-xp");
-          const cc = document.getElementById("combo-chip");
-          if (combo >= 2) { cc.style.display = ""; cc.textContent = `🔥 COMBO ×${combo}`; }
-        } else {
-          combo = 0;
-          SFX.wrong();
-          document.getElementById("combo-chip").style.display = "none";
-        }
-
-        qEl.classList.add("locked", correct ? "correct" : "wrong");
-        qEl.querySelector(".q-submit-row").style.display = "none";
-
-        const fb = qEl.querySelector(".q-feedback");
-        fb.innerHTML = `
-          <div class="q-result ${correct ? "ok" : "no"}">
-            ${correct ? `🎉 ${q.boss ? "BOSS 被你击败了!" : "回答正确!"}+${q.points} XP` : `💪 这道题有点难,正确答案:<b>${esc(q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0])}</b>`}
-            <div class="explain">💡 ${esc(q.explain)}</div>
-          </div>
-          ${q.explainSteps ? `<div class="lesson-player explain-lesson">${lessonPlayerHTML("名师动画讲解(强烈建议看一遍)", "听懂讲解,下次遇到同类题就是送分题 🎁")}</div>` : ""}`;
-
-        if (q.explainSteps) {
-          createLessonPlayer(fb.querySelector(".explain-lesson"), q.explainSteps, { autoplay: !correct });
-        }
-
-        dayAnswers[key] = {
-          subject: info.subject, unitName: info.unitName, q: q.q, points: q.points,
-          correct: correct, userAns: userAns, boss: !!q.boss, fast: fast, seconds: Math.round(elapsed),
-          rightAns: q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0],
-          explain: q.explain
-        };
-        const done = Object.keys(dayAnswers).length;
-        document.getElementById("progress-chip").textContent = `已闯 ${done} / ${totalQ} 题`;
-      });
-    });
-
-    document.getElementById("btn-finish").addEventListener("click", () => {
-      const done = Object.keys(dayAnswers).length;
-      if (done < totalQ && !confirm(`还有 ${totalQ - done} 道题没挑战,未做的题记 0 分。\n确定要结束闯关吗?`)) return;
-      finishDay(day, data);
+      // 解锁「继续」按钮
+      const nextBtn = document.getElementById("btn-next");
+      nextBtn.disabled = false;
+      nextBtn.textContent = pageIdx === dayPages.length - 1 ? "完成闯关,领取战利品 🎁" : "继续 →";
+      nextBtn.classList.add("attention");
     });
   }
 

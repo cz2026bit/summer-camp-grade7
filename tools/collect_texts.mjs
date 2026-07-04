@@ -83,5 +83,12 @@ Object.values(DAYS).forEach(day => {
 add("你好恩恩,我是你的学习伙伴,这一关我们一起加油!", "zh");
 add("Hello! Welcome to Sunshine Middle School.", "en");
 
+// 翻页模式的自动播报语(必须与 js/app.js 的 pageAutoText 完全一致)
+["数学", "英语", "语文", "历史", "地理", "生物", "道法", "复习"].forEach(label =>
+  add(`接下来是${label}时间,加油!`, "zh"));
+add("点击单词卡,先听发音,再翻面记住意思。每个单词都要读三遍哦。", "zh");
+add("动手试一试,点按钮看看温度计的变化。", "zh");
+add("动手试一试,点按钮移动数轴上的小球。", "zh");
+
 fs.writeFileSync(path.join(__dirname, "texts.json"), JSON.stringify(out, null, 1), "utf8");
 console.log("collected", Object.keys(out).length, "unique clips");
