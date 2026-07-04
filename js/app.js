@@ -182,6 +182,38 @@
       if (/[；;：:]/.test(chunk.slice(-1))) return 120;
       return 70;
     },
+    async speakRemote(text, lang) {
+      if (!this.prefs.remoteUrl) return false;
+      try {
+        const res = await fetch(this.prefs.remoteUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: String(text), lang: lang || guessLang(text) })
+        });
+        if (!res.ok) throw new Error("remote tts failed");
+        const type = res.headers.get("content-type") || "";
+        let audioUrl = "";
+        if (type.includes("application/json")) {
+          const data = await res.json();
+          audioUrl = data.audioUrl || data.url || "";
+        } else {
+          audioUrl = URL.createObjectURL(await res.blob());
+        }
+        if (!audioUrl) throw new Error("empty audio");
+        await new Promise(resolve => {
+          const audio = new Audio(audioUrl);
+          this.currentAudio = audio;
+          audio.onended = resolve;
+          audio.onerror = resolve;
+          audio.play().catch(resolve);
+        });
+        if (audioUrl.startsWith("blob:")) URL.revokeObjectURL(audioUrl);
+        return true;
+      } catch (e) {
+        console.warn("Remote TTS fallback to browser voice:", e);
+        return false;
+      }
+    },
     speak(text, lang) {
       this.token += 1;
       const token = this.token;
@@ -192,24 +224,35 @@
       const pitch = en ? 1 : 1.04;
       const volume = Math.max(0.2, Math.min(1, this.prefs.volume || 1));
       try { speechSynthesis.cancel(); } catch (e) {}
-      return chunks.reduce((chain, chunk) => chain.then(() => {
-        if (token !== this.token) return Promise.resolve();
-        return new Promise(resolve => {
-          try {
-            const u = new SpeechSynthesisUtterance(chunk);
-            u.voice = voice;
-            u.lang = en ? "en-US" : "zh-CN";
-            u.rate = rate;
-            u.pitch = pitch;
-            u.volume = volume;
-            u.onend = () => setTimeout(resolve, this.pauseFor(chunk));
-            u.onerror = resolve;
-            speechSynthesis.speak(u);
-          } catch (e) { resolve(); }
+      if (this.prefs.remoteUrl) {
+        return this.speakRemote(text, lang).then(ok => {
+          if (ok) return;
+          return chunks.reduce((chain, chunk) => chain.then(() => this.speakChunk(chunk, token, voice, en, rate, pitch, volume)), Promise.resolve());
         });
-      }), Promise.resolve());
+      }
+      return chunks.reduce((chain, chunk) => chain.then(() => this.speakChunk(chunk, token, voice, en, rate, pitch, volume)), Promise.resolve());
     },
-    stop() { this.token += 1; try { speechSynthesis.cancel(); } catch (e) {} }
+    speakChunk(chunk, token, voice, en, rate, pitch, volume) {
+      return new Promise(resolve => {
+        if (token !== this.token) { resolve(); return; }
+        try {
+          const u = new SpeechSynthesisUtterance(chunk);
+          u.voice = voice;
+          u.lang = en ? "en-US" : "zh-CN";
+          u.rate = rate;
+          u.pitch = pitch;
+          u.volume = volume;
+          u.onend = () => setTimeout(resolve, this.pauseFor(chunk));
+          u.onerror = resolve;
+          speechSynthesis.speak(u);
+        } catch (e) { resolve(); }
+      });
+    },
+    stop() {
+      this.token += 1;
+      try { speechSynthesis.cancel(); } catch (e) {}
+      try { if (this.currentAudio) this.currentAudio.pause(); } catch (e) {}
+    }
   };
   TTS.init();
   function guessLang(text) {
@@ -247,7 +290,10 @@
         <div class="vs-row"><label>音量</label>
           <input type="range" id="vs-volume" min="0.4" max="1" step="0.05" value="${TTS.prefs.volume || 1}">
           <span id="vs-volume-val">${Math.round((TTS.prefs.volume || 1) * 100)}%</span></div>
-        <div class="vs-hint">浏览器语音不会把 API key 暴露到网页里,同一份代码可离线打开。想要更接近真人,优先用 Edge 的微软 Natural/Online 声音,或在系统里下载高质量中文声音。</div>
+        <div class="vs-row vs-url"><label>云端语音</label>
+          <input id="vs-remote" type="url" placeholder="可填豆包 TTS 代理地址,留空用浏览器语音" value="${esc(TTS.prefs.remoteUrl || "")}">
+          <span></span></div>
+        <div class="vs-hint">豆包语音可以接,但 GitHub Pages 是纯前端,不能把豆包 API Key 写进网页,否则任何人都能看到。这里支持填写你自己的后端/Serverless 代理地址:网页把文本发给代理,代理再安全地调用豆包并返回音频。</div>
         <div style="margin-top:18px">
           <button class="btn btn-primary btn-big" id="vs-save">保存设置</button>
           <button class="btn btn-ghost-dark" id="vs-close">关闭</button>
@@ -262,6 +308,7 @@
       TTS.prefs.en = $("#vs-en").value;
       TTS.prefs.rate = parseFloat($("#vs-rate").value);
       TTS.prefs.volume = parseFloat($("#vs-volume").value);
+      TTS.prefs.remoteUrl = $("#vs-remote").value.trim();
       TTS.zhVoice = TTS.voices.find(v => v.name === TTS.prefs.zh) || TTS.zhVoice;
       TTS.enVoice = TTS.voices.find(v => v.name === TTS.prefs.en) || TTS.enVoice;
     }
@@ -851,6 +898,14 @@
           <div class="title">${esc(b.title)} ${b.speakable ? `<button class="mini-voice read-voice" data-text="${esc(b.paragraphs.join(" "))}">🔊 听全文</button>` : ""}</div>
           ${b.paragraphs.map(p => `<p>${esc(p)}</p>`).join("")}
         </div><div class="reading-tip">💡 ${esc(b.tip)}</div>`;
+      case "foldableReading":
+        return `<details class="fold-reading">
+          <summary>${esc(b.title)} <span>${esc(b.summary || "展开阅读")}</span></summary>
+          <div class="reading-passage">
+            ${(b.paragraphs || []).map(p => `<p>${esc(p)}</p>`).join("")}
+          </div>
+          ${b.tip ? `<div class="reading-tip">💡 ${esc(b.tip)}</div>` : ""}
+        </details>`;
       default:
         return "";
     }
@@ -865,7 +920,7 @@
           <span class="opt-letter">${"ABCD"[oi]}</span><span>${esc(opt)}</span>
         </div>`).join("")}</div>`;
     } else {
-      inner = `<input class="fill-input" type="text" placeholder="在这里输入答案…" autocomplete="off">`;
+      inner = `<input class="fill-input" type="text" placeholder="${esc(q.placeholder || "在这里输入答案…")}" autocomplete="off">`;
     }
     return `<div class="quiz-question inline-q ${q.boss ? "boss-q" : ""}" data-key="${key}" data-subject="${subject}">
       <div class="q-head">
@@ -928,7 +983,7 @@
           const val = qEl.querySelector(".fill-input").value.trim();
           if (!val) { alert("先填写答案再提交哦!"); return; }
           userAns = val;
-          correct = q.accept.some(a => normalize(a) === normalize(val));
+          correct = isFillCorrect(q, val);
           qEl.querySelector(".fill-input").disabled = true;
         }
 
@@ -981,6 +1036,15 @@
       if (done < totalQ && !confirm(`还有 ${totalQ - done} 道题没挑战,未做的题记 0 分。\n确定要结束闯关吗?`)) return;
       finishDay(day, data);
     });
+  }
+
+  function isFillCorrect(q, val) {
+    const user = normalize(val);
+    if ((q.accept || []).some(a => normalize(a) === user)) return true;
+    if ((q.mustInclude || []).length) {
+      return q.mustInclude.every(group => group.some(item => user.includes(normalize(item))));
+    }
+    return false;
   }
 
   // ================================================================

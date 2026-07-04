@@ -348,6 +348,10 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 }
 .vs-row label { font-weight: 700; font-size: 13px; }
 .vs-row select, .vs-row input[type="range"] { min-width: 0; width: 100%; }
+.vs-row input[type="url"] {
+  min-width: 0; width: 100%; border: 2px solid #e5e8f5; border-radius: 10px;
+  padding: 8px 10px; font-family: inherit; color: var(--text); background: #fff;
+}
 .vs-row select {
   border: 2px solid #e5e8f5; border-radius: 10px; padding: 8px 10px;
   font-family: inherit; color: var(--text); background: #fff;
@@ -373,14 +377,15 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   background: rgba(255,255,255,.72); border: 1px solid rgba(217,223,248,.9);
 }
 .stage-visual {
-  min-height: 210px; display: flex; align-items: center; justify-content: center;
+  height: 210px; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(180deg, #ffffff, #f8faff);
+  overflow: hidden;
 }
 .stage-caption {
-  min-height: 70px; padding: 12px 16px; display: flex; align-items: center;
+  min-height: 64px; padding: 10px 14px; display: flex; align-items: center;
   background: #fff; border-top: 1px solid #e5e8f5;
 }
-.stage-caption .cap-text { font-size: 15px; font-weight: 700; line-height: 1.8; }
+.stage-caption .cap-text { font-size: 14px; font-weight: 700; line-height: 1.65; }
 .stage-caption.cap-in .cap-text { animation: captionIn .35s ease both; }
 .stage-progress { height: 5px; background: #e5e8f5; }
 .stage-progress > i {
@@ -391,10 +396,11 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 .scene-svg { width: 100%; height: 210px; display: block; }
 .scene-emoji { font-size: 86px; animation: scenePop 1.1s cubic-bezier(.34,1.56,.64,1) both; }
 .scene-match, .scene-clues {
-  width: 100%; min-height: 210px; padding: 18px;
+  width: 100%; height: 210px; padding: 16px;
   display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  overflow: hidden;
 }
-.match-col { display: grid; gap: 8px; min-width: 150px; justify-items: center; }
+.match-col { display: grid; gap: 8px; min-width: 132px; justify-items: center; }
 .match-bucket {
   min-width: 110px; text-align: center; padding: 8px 14px; border-radius: 999px;
   background: var(--primary); color: #fff; font-weight: 800;
@@ -406,7 +412,7 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   opacity: 0; animation: slideUp .5s ease forwards;
 }
 .match-chip { font-size: 13px; font-weight: 700; color: var(--text); }
-.clue-card { width: min(180px, 100%); min-height: 82px; display: grid; align-content: center; gap: 4px; }
+.clue-card { width: min(170px, 100%); min-height: 74px; display: grid; align-content: center; gap: 4px; }
 .clue-card b { color: var(--primary); font-size: 15px; }
 .clue-card span { color: var(--text-light); font-size: 13px; line-height: 1.5; }
 .char-main { animation: scenePop .7s cubic-bezier(.34,1.56,.64,1) both; }
@@ -533,9 +539,9 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 
 /* 底部完成栏 */
 .finish-bar {
-  display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
+  display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
   background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
-  padding: 12px 20px; border-radius: 999px; box-shadow: 0 6px 24px rgba(60,70,130,.18);
+  padding: 10px 18px; border-radius: 24px; box-shadow: 0 6px 24px rgba(60,70,130,.18);
 }
 .progress-chip {
   font-size: 14px; font-weight: 700; color: var(--primary);
@@ -607,8 +613,28 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 .q-result .explain { color: var(--text-light); margin-top: 4px; }
 
 .quiz-sticky {
-  position: sticky; bottom: 16px; text-align: center; margin-top: 24px;
+  position: sticky; bottom: 10px; text-align: center; margin-top: 24px;
+  z-index: 90; pointer-events: none;
 }
+.quiz-sticky .finish-bar { pointer-events: auto; }
+
+/* ===== 折叠阅读 ===== */
+.fold-reading {
+  margin: 14px 0; border: 1px solid #e5e8f5; border-radius: 12px;
+  background: #fff; overflow: hidden;
+}
+.fold-reading summary {
+  cursor: pointer; padding: 14px 18px; font-weight: 800;
+  background: #f7f8fc; color: var(--text);
+}
+.fold-reading summary span {
+  color: var(--text-light); font-size: 12px; font-weight: 600; margin-left: 6px;
+}
+.fold-reading .reading-passage {
+  margin: 0; border: none; border-top: 1px solid #e5e8f5; border-radius: 0;
+  max-height: 360px; overflow-y: auto;
+}
+.fold-reading .reading-tip { padding: 10px 16px 14px; background: #fff; }
 
 /* ===== 成绩页 ===== */
 .score-hero {
@@ -730,6 +756,31 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   .storage-panel { display: grid; }
   .storage-actions { justify-content: flex-start; }
   .vs-row { grid-template-columns: 1fr; }
-  .stage-visual, .scene-svg { min-height: 190px; height: 190px; }
+  .lesson-player { padding: 14px; border-radius: 14px; }
+  .lesson-head { gap: 8px; }
+  .lesson-title { font-size: 14px; }
+  .lesson-ctrl .btn { padding: 7px 16px; }
+  .stage-visual, .scene-svg { height: 168px; }
+  .stage-caption { min-height: 58px; padding: 9px 12px; }
+  .stage-caption .cap-text { font-size: 13px; line-height: 1.55; }
+  .scene-emoji { font-size: 66px; }
+  .scene-match, .scene-clues {
+    height: 168px; padding: 10px; gap: 8px;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center;
+  }
+  .match-col { min-width: 0; gap: 5px; }
+  .match-bucket { min-width: 0; width: 100%; padding: 6px 6px; font-size: 12px; }
+  .match-chip, .clue-card { padding: 6px 7px; border-radius: 10px; }
+  .match-chip { font-size: 11px; line-height: 1.35; }
+  .clue-card { width: 100%; min-height: 58px; }
+  .clue-card b { font-size: 13px; }
+  .clue-card span { font-size: 11px; line-height: 1.35; }
+  .finish-bar {
+    width: calc(100vw - 28px); display: grid; grid-template-columns: 1fr;
+    gap: 8px; padding: 10px 12px; border-radius: 20px;
+  }
+  .finish-bar .btn-big { font-size: 15px; padding: 11px 16px; width: 100%; }
+  .progress-chip { font-size: 13px; padding: 6px 14px; justify-self: center; }
+  .quiz-sticky { bottom: 8px; }
   .quiz-question .q-head { align-items: flex-start; }
 }

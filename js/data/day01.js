@@ -74,9 +74,10 @@ window.DAYS[1] = {
           blocks: [
             { type: "text", html: "💪 <b>BOSS 战规则</b>:这道题需要动笔计算,拿出草稿纸,一步一步来。答对得 <b>20 XP</b>!" }
           ],
-          q: { type: "choice", points: 20, boss: true, voice: "zh",
-            q: "科学实验:一杯 22℃ 的水放进冷冻室后,温度每分钟下降 2℃。水降到 0℃ 时开始结冰,再继续降到 −6℃ 时被取出。请问这杯水在冷冻室里一共待了多少分钟?",
-            options: ["11 分钟", "14 分钟", "8 分钟", "28 分钟"], answer: 1,
+          q: { type: "fill", points: 20, boss: true, voice: "zh",
+            q: "科学实验:一杯 22℃ 的水放进冷冻室后,温度每分钟下降 2℃。水降到 0℃ 时开始结冰,再继续降到 −6℃ 时被取出。请问这杯水在冷冻室里一共待了多少分钟?请直接填写数字或“几分钟”。",
+            placeholder: "例如: 12分钟",
+            accept: ["14", "14分钟", "十四分钟"],
             demoSteps: [
               { text: "遇到降温题,先画温度路线:从 22℃ 一路下降,会先到 0℃。", emoji: "🌡️", scene: { type: "thermo", from: 22, to: 0 } },
               { text: "到 0℃ 之后还没结束,题目说继续降到 −6℃,所以要再算第二段。", emoji: "🧊", scene: { type: "thermo", from: 0, to: -6 } },
@@ -136,14 +137,10 @@ window.DAYS[1] = {
             ] },
             { type: "chant", lines: ["我用 am,你用 are,", "is 连着他、她、它;", "单数名词用 is,", "复数全部都用 are。"] }
           ],
-          q: { type: "choice", points: 15, voice: "en",
-            q: "下面四个句子里,只有一句语法完全正确,恩恩来当小老师,把它找出来:",
-            options: [
-              "My brother and I is students.",
-              "The books on the desk is mine.",
-              "Li Ming and his sister are in the library.",
-              "She are my English teacher."
-            ], answer: 2,
+          q: { type: "fill", points: 15, voice: "en",
+            q: "下面四个句子里,只有一句语法完全正确。请把完整正确句子抄写出来: ①My brother and I is students. ②The books on the desk is mine. ③Li Ming and his sister are in the library. ④She are my English teacher.",
+            placeholder: "请填写完整正确句子",
+            accept: ["Li Ming and his sister are in the library.", "Li Ming and his sister are in the library"],
             demoSteps: [
               { text: "做 Be 动词题,第一步不是看选项,而是抓真正的主语。", emoji: "🔍", scene: { type: "clues", items: [
                 { head: "Step 1", text: "找主语" },
@@ -161,7 +158,7 @@ window.DAYS[1] = {
                 { head: "判断", text: "books 是复数" }
               ] } }
             ],
-            explain: "C 正确:Li Ming and his sister 是两个人(复数)配 are。A 错:两个人要用 are;B 错:主语 The books 是复数要用 are;D 错:She 要用 is。",
+            explain: "正确句子是 Li Ming and his sister are in the library. Li Ming and his sister 是两个人(复数)配 are。①错:两个人要用 are;②错:主语 The books 是复数要用 are;④错:She 要用 is。",
             explainSteps: [
               { text: "这道题考的是「找主语」的真功夫,一句一句来。", emoji: "🔍" },
               { text: "A 句主语是 My brother and I,两个人,是复数,应该用 are,错!", emoji: "❌" },
@@ -181,14 +178,11 @@ window.DAYS[1] = {
               "At my new school, students wear blue uniforms. I think they are cool. I can't wait for the new term!"
             ], tip: "生词提示:September 九月 / teaching building 教学楼 / next to 在…旁边 / time machine 时光机 / term 学期" }
           ],
-          q: { type: "choice", points: 15, voice: "en",
-            q: "推理题:根据短文,下面哪句话是正确的?(线索藏在字里行间)",
-            options: [
-              "Li Ming's sister thinks history is boring.",
-              "Li Ming likes the library because he loves reading.",
-              "The library is in the teaching building.",
-              "Li Ming doesn't like the school uniform."
-            ], answer: 1,
+          q: { type: "fill", points: 15, voice: "en",
+            q: "推理题:根据短文,Li Ming 为什么最喜欢图书馆?请用英文或中文简短回答。",
+            placeholder: "例如: Because ...",
+            accept: ["Because he loves reading.", "because he loves reading", "He loves reading.", "he loves reading", "因为他爱读书", "因为他喜欢阅读", "他爱读书", "他喜欢阅读"],
+            mustInclude: [["love reading", "loves reading", "爱读书", "喜欢阅读"]],
             demoSteps: [
               { text: "阅读推理题要像侦探:每个选项都要回原文找证据。", emoji: "🕵️", scene: { type: "clues", items: [
                 { head: "so", text: "前因后果" },
@@ -202,7 +196,7 @@ window.DAYS[1] = {
               ] } },
               { text: "不要只找相同单词,还要判断意思有没有被偷换:boring、in、doesn't like 都要核对。", emoji: "⚠️", scene: { type: "emoji", emoji: "🧭" } }
             ],
-            explain: "原文说 I love reading, so the library is my favorite place——因为爱读书,所以最爱图书馆,B 正确。A 错:姐姐觉得历史像时光机(有趣);C 错:图书馆在操场旁边;D 错:他觉得校服很酷。",
+            explain: "原文说 I love reading, so the library is my favorite place——因为爱读书,所以最爱图书馆。推理题要抓住 so 连接的因果关系。",
             explainSteps: [
               { text: "推理题的秘诀:每个选项都回原文找证据,不能凭感觉。", emoji: "🕵️" },
               { text: "A 选项:原文说姐姐觉得历史像时光机,这是喜欢,不是无聊,错!", emoji: "❌" },
@@ -229,9 +223,10 @@ window.DAYS[1] = {
               { text: "易错字形也用理解法记:「翻来覆去」的覆是翻转,和覆盖同字;「人声鼎沸」的鼎是大锅,人声像锅里的水沸腾。", emoji: "🍲" }
             ] }
           ],
-          q: { type: "choice", points: 10, voice: "zh",
-            q: "户外音乐会上,歌手唱一句,观众跟着唱一句,记者写道:「台下观众纷纷应和,人声鼎沸。」这句话中「和」的读音与下面哪个词中的「和」相同?",
-            options: ["和平共处", "曲高和寡", "和衣而卧", "风和日丽"], answer: 1,
+          q: { type: "fill", points: 10, voice: "zh",
+            q: "户外音乐会上,歌手唱一句,观众跟着唱一句,记者写道:「台下观众纷纷应和,人声鼎沸。」这里「和」应该读什么?请写拼音,也可以写出一个同读音词语。",
+            placeholder: "例如: he / 曲高和寡",
+            accept: ["hè", "he", "四声he", "第四声he", "曲高和寡"],
             demoSteps: [
               { text: "多音字不要硬背,先看意思。这个方法叫「据义定音」。", emoji: "🔑", scene: { type: "char", char: "和", pinyins: ["hé", "hè", "huó", "huò", "hú"], highlight: 1 } },
               { text: "如果是声音相互呼应、跟着唱,「和」就读 hè。", emoji: "🎵", scene: { type: "clues", items: [
@@ -241,7 +236,7 @@ window.DAYS[1] = {
               ] } },
               { text: "再回到选项里找同样意思的词,读音就能锁定。", emoji: "🎯", scene: { type: "char", char: "和", pinyins: ["平和", "跟唱", "掺合", "和面"], highlight: 1 } }
             ],
-            explain: "「应和」与「曲高和寡」的「和」都是「跟着唱、呼应」的意思,读 hè。据义定音:和平/风和日丽读 hé,和衣而卧读 hé(温和义类),而跟唱呼应义读 hè。",
+            explain: "「应和」与「曲高和寡」的「和」都是「跟着唱、呼应」的意思,读 hè。据义定音:和平/风和日丽读 hé,而跟唱呼应义读 hè。",
             explainSteps: [
               { text: "先用密码「据义定音」:观众跟着歌手唱,这是呼应、跟唱的意思,所以「应和」读 hè。", emoji: "🔑" },
               { text: "再看选项:「曲高和寡」意思是曲调太高雅,能跟着唱的人很少——这个「和」也是跟唱,同样读 hè!", emoji: "🎵" },
@@ -297,7 +292,17 @@ window.DAYS[1] = {
         {
           name: "今日彩蛋 · 名著打卡",
           blocks: [
-            { type: "rule", title: "📖 睡前 20 分钟名著时间", html: "初一必读第一本:<b>《朝花夕拾》</b>(鲁迅回忆童年的散文集,共 10 篇)。<br>今晚任务:读《从百草园到三味书屋》,里面有雪地捕鸟、拔何首乌、听长妈妈讲美女蛇的故事——鲁迅小时候比你想象的调皮多了 😄<br><b>明天的语文题会从这篇文章里出彩蛋题哦!</b>" }
+            { type: "rule", title: "📖 睡前 20 分钟名著时间", html: "初一必读第一本:<b>《朝花夕拾》</b>(鲁迅回忆童年的散文集,共 10 篇)。<br><b>今晚具体篇目:</b>《从百草园到三味书屋》。阅读目标:找出文中写童年乐趣的三个细节,明天的语文题会从这里出彩蛋。" },
+            { type: "foldableReading", title: "《从百草园到三味书屋》节选 · 默认折叠", summary: "点这里展开正文",
+              paragraphs: [
+                "我家的后面有一个很大的园,相传叫作百草园。现在是早已并屋子一起卖给朱文公的子孙了,连那最末次的相见也已经隔了七八年,其中似乎确凿只有一些野草;但那时却是我的乐园。",
+                "不必说碧绿的菜畦,光滑的石井栏,高大的皂荚树,紫红的桑椹;也不必说鸣蝉在树叶里长吟,肥胖的黄蜂伏在菜花上,轻捷的叫天子忽然从草间直窜向云霄里去了。",
+                "单是周围的短短的泥墙根一带,就有无限趣味。油蛉在这里低唱,蟋蟀们在这里弹琴。翻开断砖来,有时会遇见蜈蚣;还有斑蝥,倘若用手指按住它的脊梁,便会拍的一声,从后窍喷出一阵烟雾。",
+                "何首乌藤和木莲藤缠络着,木莲有莲房一般的果实,何首乌有臃肿的根。有人说,何首乌根是有像人形的,吃了便可以成仙,我于是常常拔它起来,牵连不断地拔起来,也曾因此弄坏了泥墙,却从来没有见过有一块根像人样。",
+                "如果不怕刺,还可以摘到覆盆子,像小珊瑚珠攒成的小球,又酸又甜,色味都比桑椹要好得远。"
+              ],
+              tip: "阅读打卡:圈出 3 个表示颜色或声音的词,再写一句话:为什么鲁迅说百草园是“我的乐园”?"
+            }
           ],
           q: null
         }
