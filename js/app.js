@@ -536,184 +536,313 @@
   // 动画场景库(SVG 可视化动画)
   // ================================================================
   const SCENES = {
-    // 默认:大表情弹跳
+    // 默认:发光光斑 + 大表情漂浮 + 星光点缀
     emoji(el, p, step) {
-      el.innerHTML = `<div class="scene-emoji">${p.emoji || step.emoji || "💡"}</div>`;
+      const em = p.emoji || step.emoji || "💡";
+      const sparks = Array.from({ length: 6 }, (_, i) =>
+        `<span class="sw-spark" style="left:${12 + Math.random() * 76}%;top:${10 + Math.random() * 70}%;animation-delay:${i * .35}s">✦</span>`).join("");
+      el.innerHTML = `<div class="scene-wrap sw-emoji-wrap">
+        <div class="sw-blob"></div><div class="sw-blob sw-blob2"></div>
+        ${sparks}
+        <div class="sw-emoji">${em}</div>
+      </div>`;
     },
 
-    // 数轴:小球跳跃 from → to
+    // 数轴 2.0:发光小球弹跳 + 拖尾 + 落点脉冲环 + 起终点标签
     numberline(el, p) {
-      const min = -10, max = 10, W = 600, H = 200, y = 118;
-      const xOf = v => 30 + (v - min) / (max - min) * (W - 60);
+      const min = -10, max = 10, W = 600, y = 122;
+      const xOf = v => 34 + (v - min) / (max - min) * (W - 68);
       const fmtNum = n => Math.abs(n) < 0.001 ? "0" : Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
       const marks = [];
       for (let v = min; v <= max; v += 2) {
-        marks.push(`<line x1="${xOf(v)}" y1="${y - 6}" x2="${xOf(v)}" y2="${y + 6}" stroke="#8a90b8" stroke-width="2"/>
-          <text x="${xOf(v)}" y="${y + 28}" text-anchor="middle" font-size="14"
-            fill="${v === p.to ? "#ff8a3d" : v === p.from ? "#5b6ef5" : v < 0 ? "#5b6ef5" : v > 0 ? "#ff5252" : "#2b2d42"}"
-            font-weight="${v === p.to || v === p.from || v === 0 ? "800" : "400"}">${v}</text>`);
+        const major = v === p.to || v === p.from || v === 0;
+        marks.push(`<line x1="${xOf(v)}" y1="${y - (major ? 9 : 6)}" x2="${xOf(v)}" y2="${y + (major ? 9 : 6)}" stroke="${major ? "#6b74c9" : "#b8bede"}" stroke-width="${major ? 3 : 2}"/>
+          <text x="${xOf(v)}" y="${y + 30}" text-anchor="middle" font-size="${major ? 16 : 13}"
+            fill="${v === p.to ? "#ff8a3d" : v === p.from ? "#5b6ef5" : v < 0 ? "#7c86e8" : v > 0 ? "#f07878" : "#2b2d42"}"
+            font-weight="${major ? "900" : "500"}">${v}</text>`);
       }
-      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="scene-svg">
-        <line x1="16" y1="${y}" x2="${W - 16}" y2="${y}" stroke="#8a90b8" stroke-width="2.5"/>
-        <polygon points="${W - 16},${y} ${W - 30},${y - 7} ${W - 30},${y + 7}" fill="#8a90b8"/>
-        ${marks.join("")}
-        <circle class="nl-anim-dot" cx="${xOf(p.from)}" cy="${y - 14}" r="11" fill="#ff8a3d" stroke="#fff" stroke-width="3"/>
-        <text class="nl-anim-label" x="${xOf(p.from)}" y="${y - 34}" text-anchor="middle" font-size="17" font-weight="800" fill="#ff8a3d">${fmtNum(p.from)}</text>
-      </svg>`;
-      const dot = el.querySelector(".nl-anim-dot");
-      const label = el.querySelector(".nl-anim-label");
       const x0 = xOf(p.from), x1 = xOf(p.to);
+      el.innerHTML = `<div class="scene-wrap"><svg viewBox="0 0 ${W} 200" class="scene-svg">
+        <defs>
+          <radialGradient id="nlDotG" cx="35%" cy="30%"><stop offset="0%" stop-color="#ffd36b"/><stop offset="100%" stop-color="#ff7a2f"/></radialGradient>
+          <filter id="nlGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <linearGradient id="nlAxis" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8a90b8"/><stop offset="100%" stop-color="#6b74c9"/></linearGradient>
+        </defs>
+        <rect x="14" y="${y - 2.5}" width="${W - 28}" height="5" rx="2.5" fill="url(#nlAxis)"/>
+        <polygon points="${W - 12},${y} ${W - 28},${y - 8} ${W - 28},${y + 8}" fill="#6b74c9"/>
+        ${marks.join("")}
+        <circle class="nl2-ring" cx="${x1}" cy="${y}" r="10" fill="none" stroke="#ff8a3d" stroke-width="3"/>
+        <g class="nl2-trails"></g>
+        <ellipse class="nl2-dot" cx="${x0}" cy="${y - 15}" rx="12" ry="12" fill="url(#nlDotG)" stroke="#fff" stroke-width="3" filter="url(#nlGlow)"/>
+        <g class="nl2-tag" filter="url(#nlGlow)">
+          <rect class="nl2-tag-bg" x="${x0 - 30}" y="${y - 66}" width="60" height="30" rx="15" fill="#ff8a3d"/>
+          <text class="nl2-tag-tx" x="${x0}" y="${y - 45}" text-anchor="middle" font-size="17" font-weight="900" fill="#fff">${fmtNum(p.from)}</text>
+        </g>
+      </svg></div>`;
+      const dot = el.querySelector(".nl2-dot");
+      const tagBg = el.querySelector(".nl2-tag-bg");
+      const tagTx = el.querySelector(".nl2-tag-tx");
+      const trails = el.querySelector(".nl2-trails");
       const hops = Math.min(4, Math.max(1, Math.abs(p.to - p.from)));
-      const t0 = performance.now(), dur = 1700;
+      const t0 = performance.now(), dur = 1900;
+      let lastTrail = 0;
       (function anim(now) {
         const t = Math.min((now - t0) / dur, 1);
         const ease = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
         const x = x0 + (x1 - x0) * ease;
-        const bounce = Math.abs(Math.sin(t * Math.PI * hops)) * 34;
-        dot.setAttribute("cx", x); dot.setAttribute("cy", y - 14 - bounce);
-        label.setAttribute("x", x); label.setAttribute("y", y - 38 - bounce);
-        label.textContent = fmtNum(p.from + (p.to - p.from) * ease);
+        const wave = Math.sin(t * Math.PI * hops);
+        const bounce = Math.abs(wave) * 40;
+        const land = 1 - Math.abs(wave);            // 落地程度 0~1
+        const sx = 12 * (1 + land * .28), sy = 12 * (1 - land * .3);
+        dot.setAttribute("cx", x); dot.setAttribute("cy", y - 15 - bounce);
+        dot.setAttribute("rx", sx); dot.setAttribute("ry", sy);
+        tagBg.setAttribute("x", x - 30); tagBg.setAttribute("y", y - 66 - bounce);
+        tagTx.setAttribute("x", x); tagTx.setAttribute("y", y - 45 - bounce);
+        tagTx.textContent = fmtNum(p.from + (p.to - p.from) * ease);
+        if (now - lastTrail > 50 && t < 1) {
+          lastTrail = now;
+          const tr = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          tr.setAttribute("cx", x); tr.setAttribute("cy", y - 15 - bounce);
+          tr.setAttribute("r", 6); tr.setAttribute("class", "nl2-trail");
+          trails.appendChild(tr);
+          setTimeout(() => tr.remove(), 700);
+        }
         if (t < 1) requestAnimationFrame(anim);
+        else dot.classList.add("nl2-arrived");
       })(t0);
     },
 
-    // 温度计:从 from 降/升到 to
+    // 温度计 2.0:玻璃质感 + 气泡 + 天气氛围(雪/太阳)
     thermo(el, p) {
       const min = -30, max = 40;
       const hOf = t => (t - min) / (max - min);
-      el.innerHTML = `<div class="scene-thermo">
-        <svg viewBox="0 0 600 200" class="scene-svg">
-          <rect x="262" y="14" width="42" height="150" rx="21" fill="#eceef8" stroke="#d9dcf0" stroke-width="3"/>
-          <rect class="th-fill" x="266" y="${18 + 142 * (1 - hOf(p.from))}" width="34" height="${142 * hOf(p.from)}" rx="17" fill="${p.from > 0 ? "#ff6b4a" : "#4a7dff"}"/>
-          <circle cx="283" cy="172" r="18" fill="${p.to > 0 ? "#ff6b4a" : "#4a7dff"}" class="th-bulb"/>
-          <text x="330" y="40" font-size="15" fill="#9aa0b5">40℃</text>
-          <line x1="306" y1="${18 + 142 * (1 - hOf(0))}" x2="322" y2="${18 + 142 * (1 - hOf(0))}" stroke="#2b2d42" stroke-width="2"/>
-          <text x="330" y="${23 + 142 * (1 - hOf(0))}" font-size="15" font-weight="800" fill="#2b2d42">0℃</text>
-          <text x="330" y="162" font-size="15" fill="#9aa0b5">−30℃</text>
-          <text class="th-num" x="185" y="105" text-anchor="middle" font-size="44" font-weight="900" fill="${p.from > 0 ? "#ff5252" : "#4a7dff"}">${p.from > 0 ? "+" : ""}${p.from}℃</text>
-        </svg></div>`;
-      const fill = el.querySelector(".th-fill");
-      const num = el.querySelector(".th-num");
-      const t0 = performance.now(), dur = 2000;
+      const cold = p.to <= 0, hot = p.to >= 25;
+      const flakes = cold ? Array.from({ length: 9 }, (_, i) =>
+        `<text class="th2-flake" x="${40 + Math.random() * 160}" y="-12" font-size="${12 + Math.random() * 8}" style="animation-delay:${i * .5}s;animation-duration:${2.6 + Math.random() * 2}s">❄</text>`).join("") : "";
+      const sun = hot ? `<g class="th2-sun"><circle cx="80" cy="46" r="22" fill="#ffd93d"/><g class="th2-rays">${Array.from({ length: 8 }, (_, i) =>
+        `<line x1="80" y1="46" x2="${80 + 36 * Math.cos(i * Math.PI / 4)}" y2="${46 + 36 * Math.sin(i * Math.PI / 4)}" stroke="#ffd93d" stroke-width="4" stroke-linecap="round"/>`).join("")}</g></g>` : "";
+      const scale = [];
+      for (let tv = -30; tv <= 40; tv += 10) {
+        const sy = 18 + 142 * (1 - hOf(tv));
+        scale.push(`<line x1="315" y1="${sy}" x2="${tv === 0 ? 332 : 326}" y2="${sy}" stroke="${tv === 0 ? "#2b2d42" : "#b8bede"}" stroke-width="${tv === 0 ? 2.5 : 1.5}"/>
+          <text x="338" y="${sy + 5}" font-size="${tv === 0 ? 15 : 12}" font-weight="${tv === 0 ? "900" : "500"}" fill="${tv === 0 ? "#2b2d42" : "#9aa0b5"}">${tv}℃</text>`);
+      }
+      el.innerHTML = `<div class="scene-wrap"><svg viewBox="0 0 600 200" class="scene-svg">
+        <defs>
+          <linearGradient id="thHot" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffb36b"/><stop offset="100%" stop-color="#ff5252"/></linearGradient>
+          <linearGradient id="thCold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7db8ff"/><stop offset="100%" stop-color="#3b6ef0"/></linearGradient>
+          <radialGradient id="thBulb" cx="35%" cy="30%"><stop offset="0%" stop-color="#ff9d7a"/><stop offset="100%" stop-color="#ff5252"/></radialGradient>
+          <radialGradient id="thBulbC" cx="35%" cy="30%"><stop offset="0%" stop-color="#8db8ff"/><stop offset="100%" stop-color="#3b6ef0"/></radialGradient>
+          <filter id="thGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <clipPath id="thClip"><rect x="270" y="16" width="36" height="148" rx="18"/></clipPath>
+        </defs>
+        ${sun}${flakes}
+        <rect x="264" y="10" width="48" height="160" rx="24" fill="#f2f4fd" stroke="#d9dcf0" stroke-width="3"/>
+        <g clip-path="url(#thClip)">
+          <rect class="th2-fill" x="270" y="${18 + 142 * (1 - hOf(p.from))}" width="36" height="${150 * hOf(p.from)}" fill="url(#${p.from > 0 ? "thHot" : "thCold"})"/>
+          <circle class="th2-bub" cx="280" cy="150" r="3" fill="rgba(255,255,255,.65)"/>
+          <circle class="th2-bub" cx="292" cy="158" r="2.3" fill="rgba(255,255,255,.55)" style="animation-delay:.7s"/>
+          <circle class="th2-bub" cx="286" cy="145" r="1.8" fill="rgba(255,255,255,.5)" style="animation-delay:1.3s"/>
+        </g>
+        <rect x="272" y="20" width="7" height="130" rx="3.5" fill="rgba(255,255,255,.55)"/>
+        <circle class="th2-bulb" cx="288" cy="172" r="20" fill="url(#${p.to > 0 ? "thBulb" : "thBulbC"})" stroke="#fff" stroke-width="3" filter="url(#thGlow)"/>
+        ${scale.join("")}
+        <text class="th2-num" x="165" y="100" text-anchor="middle" font-size="50" font-weight="900" filter="url(#thGlow)"
+          fill="${p.from > 0 ? "#ff5252" : "#3b6ef0"}">${p.from > 0 ? "+" : ""}${p.from}℃</text>
+        <text x="165" y="130" text-anchor="middle" font-size="14" font-weight="700" fill="#9aa0b5">${p.to < p.from ? "温度下降中…" : "温度上升中…"}</text>
+      </svg></div>`;
+      const fill = el.querySelector(".th2-fill");
+      const num = el.querySelector(".th2-num");
+      const bulb = el.querySelector(".th2-bulb");
+      const t0 = performance.now(), dur = 2200;
       (function anim(now) {
         const t = Math.min((now - t0) / dur, 1);
         const ease = 1 - Math.pow(1 - t, 3);
         const cur = p.from + (p.to - p.from) * ease;
-        const h = 142 * hOf(cur);
-        fill.setAttribute("y", 18 + 142 - h);
+        const h = 150 * hOf(cur);
+        fill.setAttribute("y", 168 - h);
         fill.setAttribute("height", Math.max(2, h));
-        fill.setAttribute("fill", cur > 0 ? "#ff6b4a" : "#4a7dff");
+        fill.setAttribute("fill", cur > 0 ? "url(#thHot)" : "url(#thCold)");
+        bulb.setAttribute("fill", cur > 0 ? "url(#thBulb)" : "url(#thBulbC)");
         num.textContent = (cur > 0 ? "+" : "") + Math.round(cur) + "℃";
-        num.setAttribute("fill", cur > 0 ? "#ff5252" : "#4a7dff");
+        num.setAttribute("fill", cur > 0 ? "#ff5252" : "#3b6ef0");
         if (t < 1) requestAnimationFrame(anim);
+        else num.classList.add("th2-num-done");
       })(t0);
     },
 
-    // 分数饼图:a/b + c/d = r/s 动态填充
+    // 分数饼图 2.0:立体投影 + 中心分数 + 完成星光
     fraction(el, p) {
       const R = 40, C = 2 * Math.PI * R;
-      function pie(cx, frac, color, label, delay) {
-        return `<g>
-          <circle cx="${cx}" cy="86" r="${R}" fill="none" stroke="#eceef8" stroke-width="24"/>
-          <circle class="pie-fill" cx="${cx}" cy="86" r="${R}" fill="none" stroke="${color}" stroke-width="24"
-            stroke-dasharray="0 ${C}" data-target="${frac * C}" data-delay="${delay}"
-            transform="rotate(-90 ${cx} 86)" stroke-linecap="butt"/>
-          <text x="${cx}" y="162" text-anchor="middle" font-size="21" font-weight="800" fill="#2b2d42">${label}</text>
-        </g>`;
+      function pie(cx, frac, g1, g2, id, label, delay) {
+        return `
+          <radialGradient id="fr${id}" cx="35%" cy="30%"><stop offset="0%" stop-color="${g1}"/><stop offset="100%" stop-color="${g2}"/></radialGradient>
+          <g class="fr2-pie" style="animation-delay:${delay}ms">
+            <circle cx="${cx}" cy="84" r="${R + 13}" fill="#fff" filter="url(#frShadow)"/>
+            <circle cx="${cx}" cy="84" r="${R}" fill="none" stroke="#edeffa" stroke-width="24"/>
+            <circle class="pie-fill" cx="${cx}" cy="84" r="${R}" fill="none" stroke="url(#fr${id})" stroke-width="24"
+              stroke-dasharray="0 ${C}" data-target="${frac * C}" data-delay="${delay}"
+              transform="rotate(-90 ${cx} 84)"/>
+            <text x="${cx}" y="92" text-anchor="middle" font-size="22" font-weight="900" fill="#2b2d42">${label}</text>
+            <text x="${cx}" y="165" text-anchor="middle" font-size="15" font-weight="700" fill="#6b7280">${Math.round(frac * 100)}%</text>
+          </g>`;
       }
       const [a, b] = p.a, [c, d] = p.b, [rn, rd] = p.r;
-      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg">
-        ${pie(120, a / b, "#5b6ef5", a + "/" + b, 0)}
-        <text x="210" y="96" text-anchor="middle" font-size="34" font-weight="800" fill="#9aa0b5">+</text>
-        ${pie(300, c / d, "#26b8a5", c + "/" + d, 600)}
-        <text x="392" y="96" text-anchor="middle" font-size="34" font-weight="800" fill="#9aa0b5">=</text>
-        ${pie(490, rn / rd, "#ff8a3d", rn + "/" + rd, 1400)}
-      </svg>`;
+      el.innerHTML = `<div class="scene-wrap"><svg viewBox="0 0 600 200" class="scene-svg">
+        <defs><filter id="frShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#3c4682" flood-opacity=".16"/></filter></defs>
+        ${pie(115, a / b, "#8d9bff", "#5b6ef5", "A", a + "/" + b, 100)}
+        <text class="fr2-op" x="205" y="96" text-anchor="middle" font-size="38" font-weight="900" fill="#b8bede" style="animation-delay:.7s">+</text>
+        ${pie(295, c / d, "#5fd8c7", "#26b8a5", "B", c + "/" + d, 800)}
+        <text class="fr2-op" x="388" y="96" text-anchor="middle" font-size="38" font-weight="900" fill="#b8bede" style="animation-delay:1.6s">=</text>
+        ${pie(487, rn / rd, "#ffc06b", "#ff8a3d", "R", rn + "/" + rd, 1700)}
+        <g class="fr2-stars" style="animation-delay:2.7s">${[[-58, -52], [58, -50], [-52, 48], [56, 52]].map(([dx, dy]) =>
+          `<text x="${487 + dx}" y="${84 + dy}" text-anchor="middle" font-size="20" fill="#ffd93d">✦</text>`).join("")}</g>
+      </svg></div>`;
       el.querySelectorAll(".pie-fill").forEach(c2 => {
         setTimeout(() => {
-          c2.style.transition = "stroke-dasharray 1s cubic-bezier(.4,0,.2,1)";
+          c2.style.transition = "stroke-dasharray 1.1s cubic-bezier(.4,0,.2,1)";
           c2.setAttribute("stroke-dasharray", `${c2.dataset.target} ${C}`);
-        }, parseInt(c2.dataset.delay, 10) + 100);
+        }, parseInt(c2.dataset.delay, 10) + 250);
       });
     },
 
-    // Be 动词分拣:主语飞入对应的桶
+    // 分拣 2.0:桶弹入 + 词条弹簧落下 + 光晕
     match(el, p) {
-      el.innerHTML = `<div class="scene-match">${p.groups.map((g, gi) => `
+      el.innerHTML = `<div class="scene-wrap"><div class="scene-match">${p.groups.map((g, gi) => `
         <div class="match-col">
-          <div class="match-bucket" style="animation-delay:${gi * .15}s">${esc(g.head)}</div>
-          ${g.items.map((it, ii) => `<div class="match-chip" style="animation-delay:${.5 + gi * .5 + ii * .28}s">${esc(it)}</div>`).join("")}
-        </div>`).join("")}</div>`;
+          <div class="mt2-bucket" style="animation-delay:${gi * .18}s">${esc(g.head)}</div>
+          ${g.items.map((it, ii) => `<div class="mt2-chip" style="animation-delay:${.55 + gi * .5 + ii * .3}s">${esc(it)}</div>`).join("")}
+        </div>`).join("")}</div></div>`;
     },
 
-    // 汉字多音字:大字 + 拼音气泡
+    // 汉字 2.0:大字墨韵登场 + 拼音气泡连线弹出
     char(el, p) {
-      const pos = [[150, 46], [452, 46], [118, 140], [478, 140], [300, 26]];
-      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg">
-        <text x="300" y="136" text-anchor="middle" font-size="104" font-weight="900" fill="#2b2d42" class="char-main">${p.char}</text>
-        ${p.pinyins.map((py, i) => `
-          <g class="char-bubble" style="animation-delay:${.5 + i * .55}s">
-            <rect x="${pos[i][0] - 52}" y="${pos[i][1] - 22}" width="104" height="36" rx="18"
-              fill="${i === p.highlight ? "#ff8a3d" : "#eef0ff"}"/>
-            <text x="${pos[i][0]}" y="${pos[i][1] + 3}" text-anchor="middle" font-size="17" font-weight="800"
-              fill="${i === p.highlight ? "#fff" : "#5b6ef5"}">${esc(py)}</text>
-          </g>`).join("")}
-      </svg>`;
+      const pos = [[140, 46], [462, 46], [108, 142], [490, 142], [300, 24]];
+      el.innerHTML = `<div class="scene-wrap"><svg viewBox="0 0 600 200" class="scene-svg">
+        <defs><filter id="chGlow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#3c4682" flood-opacity=".2"/></filter></defs>
+        <circle class="ch2-halo" cx="300" cy="104" r="62" fill="#eef0ff"/>
+        <text x="300" y="140" text-anchor="middle" font-size="106" font-weight="900" fill="#2b2d42" class="ch2-main" filter="url(#chGlow)">${p.char}</text>
+        ${p.pinyins.map((py, i) => {
+          const hl = i === p.highlight;
+          return `
+          <line class="ch2-line" style="animation-delay:${.55 + i * .5}s" x1="300" y1="104" x2="${pos[i][0]}" y2="${pos[i][1]}" stroke="${hl ? "#ff8a3d" : "#d5daf5"}" stroke-width="2" stroke-dasharray="4 5"/>
+          <g class="ch2-bubble ${hl ? "ch2-hl" : ""}" style="animation-delay:${.6 + i * .5}s">
+            <rect x="${pos[i][0] - 55}" y="${pos[i][1] - 22}" width="110" height="38" rx="19"
+              fill="${hl ? "#ff8a3d" : "#ffffff"}" stroke="${hl ? "#ffb36b" : "#dfe4ff"}" stroke-width="2.5" filter="url(#chGlow)"/>
+            <text x="${pos[i][0]}" y="${pos[i][1] + 4}" text-anchor="middle" font-size="17" font-weight="900"
+              fill="${hl ? "#fff" : "#5b6ef5"}">${esc(py)}</text>
+          </g>`;
+        }).join("")}
+      </svg></div>`;
     },
 
-    // 大海:波浪 + 日出/月升银河(观沧海)
+    // 大海 2.0:三层视差浪 + 日出光芒 / 星河流星 + 帆船
     sea(el, p) {
       const night = p.phase === "stars";
-      const stars = night ? Array.from({ length: 16 }, (_, i) =>
-        `<circle class="star-tw" style="animation-delay:${i * .17}s" cx="${30 + Math.random() * 540}" cy="${14 + Math.random() * 70}" r="${1.5 + Math.random() * 1.8}" fill="#fff"/>`).join("") : "";
+      const stars = night ? Array.from({ length: 22 }, (_, i) =>
+        `<circle class="star-tw" style="animation-delay:${i * .14}s" cx="${20 + Math.random() * 560}" cy="${10 + Math.random() * 78}" r="${1.2 + Math.random() * 2}" fill="#fff"/>`).join("") : "";
+      const clouds = !night ? `
+        <g class="sea2-cloud"><ellipse cx="120" cy="40" rx="42" ry="15" fill="rgba(255,255,255,.85)"/><ellipse cx="150" cy="34" rx="30" ry="12" fill="rgba(255,255,255,.75)"/></g>
+        <g class="sea2-cloud sea2-cloud2"><ellipse cx="480" cy="28" rx="36" ry="12" fill="rgba(255,255,255,.8)"/></g>` : "";
       const body = p.phase === "sun"
-        ? `<circle class="sea-rise" cx="300" cy="210" r="30" fill="#ffd93d"/>`
-        : night ? `<circle class="sea-rise" cx="440" cy="200" r="24" fill="#f4f6ff"/><ellipse cx="300" cy="60" rx="220" ry="26" fill="rgba(255,255,255,.14)" class="galaxy"/>` : "";
-      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg sea-svg">
-        <rect width="600" height="200" fill="${night ? "#1d2450" : "#cfe8ff"}"/>
-        ${stars}${body}
-        <path class="wave w1" fill="${night ? "#2c3a78" : "#7db8e8"}" d="M0,140 Q75,120 150,140 T300,140 T450,140 T600,140 T750,140 T900,140 V200 H0 Z"/>
-        <path class="wave w2" fill="${night ? "#3a4c96" : "#5b9fd8"}" d="M0,158 Q75,142 150,158 T300,158 T450,158 T600,158 T750,158 T900,158 V200 H0 Z"/>
-        <g class="boat"><path d="M270,132 L330,132 L318,148 L282,148 Z" fill="#8a5a2b"/><line x1="300" y1="132" x2="300" y2="100" stroke="#8a5a2b" stroke-width="3"/><path d="M300,100 L326,126 L300,126 Z" fill="#fff"/></g>
-      </svg>`;
+        ? `<g class="sea2-sunrise">
+             <g class="sea2-rays">${Array.from({ length: 12 }, (_, i) =>
+               `<line x1="300" y1="118" x2="${300 + 66 * Math.cos(i * Math.PI / 6)}" y2="${118 + 66 * Math.sin(i * Math.PI / 6)}" stroke="#ffd93d" stroke-width="5" stroke-linecap="round" opacity=".7"/>`).join("")}</g>
+             <circle cx="300" cy="118" r="40" fill="#ffe9a0" opacity=".5"/>
+             <circle cx="300" cy="118" r="30" fill="#ffd93d"/>
+           </g>`
+        : night ? `
+           <ellipse class="galaxy" cx="300" cy="52" rx="240" ry="30" fill="rgba(190,205,255,.16)" transform="rotate(-8 300 52)"/>
+           <ellipse class="galaxy" cx="320" cy="56" rx="170" ry="16" fill="rgba(255,255,255,.14)" transform="rotate(-8 320 56)" style="animation-delay:.7s"/>
+           <g class="sea2-moonrise"><circle cx="450" cy="70" r="24" fill="#f4f6ff"/><circle cx="442" cy="64" r="5" fill="#dde2f5"/><circle cx="458" cy="76" r="3.6" fill="#dde2f5"/><circle cx="450" cy="84" r="2.6" fill="#e6eaf8"/></g>
+           <line class="sea2-shoot" x1="90" y1="18" x2="150" y2="42" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>` : "";
+      el.innerHTML = `<div class="scene-wrap"><svg viewBox="0 0 600 200" class="scene-svg sea-svg">
+        <defs>
+          <linearGradient id="seaSky" x1="0" y1="0" x2="0" y2="1">
+            ${night ? '<stop offset="0%" stop-color="#0e1345"/><stop offset="100%" stop-color="#33418f"/>'
+                    : '<stop offset="0%" stop-color="#a5d8ff"/><stop offset="100%" stop-color="#e3f4ff"/>'}
+          </linearGradient>
+          <linearGradient id="seaW1" x1="0" y1="0" x2="0" y2="1">
+            ${night ? '<stop offset="0%" stop-color="#33418f"/><stop offset="100%" stop-color="#28356f"/>'
+                    : '<stop offset="0%" stop-color="#8ec8f0"/><stop offset="100%" stop-color="#6aaede"/>'}
+          </linearGradient>
+          <linearGradient id="seaW2" x1="0" y1="0" x2="0" y2="1">
+            ${night ? '<stop offset="0%" stop-color="#3d4d9e"/><stop offset="100%" stop-color="#2c3a78"/>'
+                    : '<stop offset="0%" stop-color="#5b9fd8"/><stop offset="100%" stop-color="#3e82c4"/>'}
+          </linearGradient>
+        </defs>
+        <rect width="600" height="200" fill="url(#seaSky)"/>
+        ${stars}${clouds}${body}
+        <path class="wave" fill="${night ? "#242f66" : "#a8d4f2"}" opacity=".8" d="M0,132 Q75,116 150,132 T300,132 T450,132 T600,132 T750,132 T900,132 V200 H0 Z" style="animation-duration:5.5s"/>
+        <g class="boat">
+          <path d="M266,136 L334,136 L320,154 L280,154 Z" fill="#a06a35"/>
+          <path d="M266,136 L334,136 L330,142 L270,142 Z" fill="#8a5a2b"/>
+          <line x1="300" y1="136" x2="300" y2="94" stroke="#7a4e24" stroke-width="3.5"/>
+          <path class="sea2-sail" d="M303,96 L332,128 L303,128 Z" fill="#fff"/>
+          <path class="sea2-sail" d="M297,100 L272,128 L297,128 Z" fill="#f2f4fd"/>
+          <path d="M300,94 L316,99 L300,104 Z" fill="#ff8a3d"/>
+        </g>
+        <path class="wave w1" fill="url(#seaW1)" d="M0,146 Q75,128 150,146 T300,146 T450,146 T600,146 T750,146 T900,146 V200 H0 Z"/>
+        <path class="wave w2" fill="url(#seaW2)" d="M0,164 Q75,148 150,164 T300,164 T450,164 T600,164 T750,164 T900,164 V200 H0 Z"/>
+        <g class="sea2-foam">${Array.from({ length: 7 }, (_, i) =>
+          `<circle cx="${40 + i * 88}" cy="${150 + (i % 2) * 14}" r="${2 + Math.random() * 2}" fill="rgba(255,255,255,.6)"/>`).join("")}</g>
+      </svg></div>`;
     },
 
-    // 干栏式 vs 半地穴式房屋(雨 / 雪)
+    // 房屋 2.0:南北分屏,茅草干栏楼(雨+水花) vs 半地穴土屋(雪+炊烟)
     house(el, p) {
-      const rain = Array.from({ length: 10 }, (_, i) =>
-        `<line class="rain" style="animation-delay:${i * .14}s" x1="${30 + i * 26}" y1="10" x2="${24 + i * 26}" y2="26" stroke="#6aa8e8" stroke-width="2.5" stroke-linecap="round"/>`).join("");
-      const snow = Array.from({ length: 10 }, (_, i) =>
-        `<circle class="snow" style="animation-delay:${i * .3}s" cx="${330 + i * 25}" cy="8" r="3" fill="#dfe8ff"/>`).join("");
-      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg">
-        <rect width="290" height="200" fill="#e8f6ee"/><rect x="310" width="290" height="200" fill="#eef2fb"/>
-        ${rain}${snow}
-        <!-- 干栏式:架空 -->
-        <g class="house-pop">
-          <line x1="80" y1="160" x2="80" y2="120" stroke="#8a5a2b" stroke-width="6"/>
-          <line x1="120" y1="160" x2="120" y2="120" stroke="#8a5a2b" stroke-width="6"/>
-          <line x1="160" y1="160" x2="160" y2="120" stroke="#8a5a2b" stroke-width="6"/>
-          <line x1="200" y1="160" x2="200" y2="120" stroke="#8a5a2b" stroke-width="6"/>
-          <rect x="65" y="90" width="150" height="34" rx="4" fill="#c98d4e"/>
-          <path d="M55,92 L140,52 L225,92 Z" fill="#7a9c58"/>
-          <line x1="20" y1="162" x2="270" y2="162" stroke="#9fc8ae" stroke-width="5"/>
+      const rain = Array.from({ length: 14 }, (_, i) =>
+        `<line class="hs2-rain" style="animation-delay:${(i * .11).toFixed(2)}s" x1="${24 + i * 19}" y1="-8" x2="${18 + i * 19}" y2="10" stroke="#6aa8e8" stroke-width="2.5" stroke-linecap="round"/>`).join("");
+      const splash = Array.from({ length: 5 }, (_, i) =>
+        `<ellipse class="hs2-splash" style="animation-delay:${(i * .33).toFixed(2)}s" cx="${45 + i * 48}" cy="164" rx="6" ry="1.8" fill="rgba(106,168,232,.55)"/>`).join("");
+      const snow = Array.from({ length: 12 }, (_, i) =>
+        `<circle class="hs2-snow" style="animation-delay:${(i * .42).toFixed(2)}s;animation-duration:${(2.8 + Math.random() * 2).toFixed(1)}s" cx="${322 + i * 23}" cy="-6" r="${2 + Math.random() * 2}" fill="#eef2ff"/>`).join("");
+      el.innerHTML = `<div class="scene-wrap"><svg viewBox="0 0 600 200" class="scene-svg">
+        <defs>
+          <linearGradient id="hsSkyS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#cdeedd"/><stop offset="100%" stop-color="#eafaf1"/></linearGradient>
+          <linearGradient id="hsSkyN" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#dfe7fb"/><stop offset="100%" stop-color="#f0f4fe"/></linearGradient>
+          <linearGradient id="hsRoof" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#94b56a"/><stop offset="100%" stop-color="#6f8f4c"/></linearGradient>
+          <filter id="hsShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#3c4682" flood-opacity=".18"/></filter>
+        </defs>
+        <rect width="296" height="200" fill="url(#hsSkyS)"/><rect x="304" width="296" height="200" fill="url(#hsSkyN)"/>
+        <rect x="296" width="8" height="200" fill="#fff"/>
+        ${rain}${splash}${snow}
+        <!-- 左:干栏式 -->
+        <g class="house-pop" filter="url(#hsShadow)">
+          <rect x="20" y="160" width="256" height="8" rx="4" fill="#9fc8ae"/>
+          ${[78, 116, 154, 192].map(x => `<rect x="${x}" y="118" width="8" height="46" rx="3" fill="#8a5a2b"/><rect x="${x - 2}" y="138" width="12" height="4" rx="2" fill="#7a4e24"/>`).join("")}
+          <rect x="60" y="88" width="150" height="34" rx="5" fill="#c98d4e"/>
+          <rect x="60" y="88" width="150" height="7" rx="3.5" fill="#b57a3c"/>
+          <rect x="122" y="98" width="24" height="24" rx="3" fill="#7a4e24"/>
+          <path d="M48,90 L135,44 L222,90 Z" fill="url(#hsRoof)"/>
+          <path d="M60,84 L135,48 L210,84" fill="none" stroke="#5d7a3e" stroke-width="3" stroke-linecap="round"/>
+          <line x1="228" y1="162" x2="212" y2="122" stroke="#8a5a2b" stroke-width="4" stroke-linecap="round"/>
+          <line x1="222" y1="150" x2="214" y2="148" stroke="#7a4e24" stroke-width="3"/>
+          <line x1="225" y1="138" x2="217" y2="136" stroke="#7a4e24" stroke-width="3"/>
         </g>
-        <text x="140" y="190" text-anchor="middle" font-size="15" font-weight="800" fill="#2f7d4f">干栏式 · 长江流域 · 防潮 🌧️</text>
-        <!-- 半地穴式:半入地下 -->
-        <g class="house-pop" style="animation-delay:.5s">
-          <rect x="340" y="140" width="220" height="40" fill="#d8c8a8"/>
-          <rect x="400" y="118" width="100" height="34" fill="#b09060"/>
-          <path d="M385,122 L450,74 L515,122 Z" fill="#8a6a3a"/>
+        <!-- 右:半地穴式 -->
+        <g class="house-pop" style="animation-delay:.45s" filter="url(#hsShadow)">
+          <path d="M320,168 Q450,150 580,168 L580,200 L320,200 Z" fill="#d8c8a8"/>
+          <path d="M360,168 Q450,158 540,168 L528,140 Q450,128 372,140 Z" fill="#c4ad82"/>
+          <path d="M375,140 L450,80 L525,140 Z" fill="#8a6a3a"/>
+          <path d="M385,136 L450,86 L515,136" fill="none" stroke="#6f5228" stroke-width="3" stroke-linecap="round"/>
+          <rect x="432" y="118" width="36" height="26" rx="4" fill="#4d3a1e"/>
+          <path class="hs2-smoke" d="M455,78 q8,-10 0,-20 q-8,-9 2,-18" fill="none" stroke="#c9cfe8" stroke-width="5" stroke-linecap="round"/>
+          ${[340, 560].map(x => `<path d="M${x},168 q4,-10 0,-16 M${x - 5},168 q-2,-8 2,-12 M${x + 5},168 q2,-8 -2,-12" stroke="#9fb87a" stroke-width="2.5" fill="none"/>`).join("")}
         </g>
-        <text x="450" y="196" text-anchor="middle" font-size="15" font-weight="800" fill="#5b6ef5">半地穴式 · 黄河流域 · 保暖 ❄️</text>
-      </svg>`;
+        <g class="hs2-label"><rect x="60" y="176" width="160" height="22" rx="11" fill="#2f7d4f"/><text x="140" y="192" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">干栏式 · 长江流域 · 防潮</text></g>
+        <g class="hs2-label" style="animation-delay:.6s"><rect x="372" y="176" width="160" height="22" rx="11" fill="#5b6ef5"/><text x="452" y="192" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">半地穴式 · 黄河流域 · 保暖</text></g>
+      </svg></div>`;
     },
 
-    // 线索卡片:阅读题/审题题用
+    // 线索卡片 2.0:3D 翻入 + 步骤箭头
     clues(el, p) {
-      el.innerHTML = `<div class="scene-clues">${p.items.map((it, i) => `
-        <div class="clue-card" style="animation-delay:${i * .25}s">
+      const arrow = `<div class="cl2-arrow">➜</div>`;
+      el.innerHTML = `<div class="scene-wrap"><div class="scene-clues">${p.items.map((it, i) => `
+        ${i > 0 ? `<div class="cl2-arrow" style="animation-delay:${i * .35}s">➜</div>` : ""}
+        <div class="cl2-card" style="animation-delay:${i * .35}s">
           <b>${esc(it.head)}</b><span>${esc(it.text)}</span>
-        </div>`).join("")}</div>`;
+        </div>`).join("")}</div></div>`;
     }
   };
 

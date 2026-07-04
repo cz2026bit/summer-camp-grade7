@@ -447,6 +447,230 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   to { transform: translateY(0) scale(1); }
 }
 
+/* ===== 场景动画 2.0 ===== */
+.scene-wrap {
+  width: 100%; height: 100%; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  animation: sceneIn2 .5s cubic-bezier(.25,.8,.35,1) both;
+}
+@keyframes sceneIn2 {
+  from { opacity: 0; transform: translateY(14px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* 舞台氛围光斑 */
+.stage-visual { position: relative; }
+.stage-visual::before, .stage-visual::after {
+  content: ""; position: absolute; border-radius: 50%; filter: blur(30px);
+  pointer-events: none; z-index: 0;
+}
+.stage-visual::before {
+  width: 200px; height: 200px; left: -40px; top: -60px;
+  background: rgba(91,110,245,.14); animation: blobDrift 7s ease-in-out infinite alternate;
+}
+.stage-visual::after {
+  width: 180px; height: 180px; right: -30px; bottom: -70px;
+  background: rgba(38,184,165,.14); animation: blobDrift 9s ease-in-out infinite alternate-reverse;
+}
+@keyframes blobDrift {
+  from { transform: translate(0,0) scale(1); }
+  to { transform: translate(26px,16px) scale(1.15); }
+}
+.scene-wrap > * { position: relative; z-index: 1; }
+
+/* 表情场景 */
+.sw-emoji-wrap { overflow: hidden; }
+.sw-blob {
+  position: absolute; width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,211,107,.55), rgba(255,138,61,.18) 70%, transparent);
+  animation: swBlobPulse 2.6s ease-in-out infinite;
+}
+.sw-blob2 {
+  width: 210px; height: 210px;
+  background: radial-gradient(circle at 60% 60%, rgba(91,110,245,.22), transparent 70%);
+  animation-duration: 3.4s;
+}
+@keyframes swBlobPulse {
+  0%,100% { transform: scale(1); opacity: .85; }
+  50% { transform: scale(1.18); opacity: 1; }
+}
+.sw-emoji {
+  font-size: 92px; animation: swEmojiIn .8s cubic-bezier(.34,1.56,.64,1) both, swFloat 3s 0.8s ease-in-out infinite;
+  filter: drop-shadow(0 10px 18px rgba(60,70,130,.25));
+}
+@keyframes swEmojiIn {
+  from { opacity: 0; transform: scale(.2) rotate(-14deg); }
+  60% { transform: scale(1.15) rotate(4deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes swFloat {
+  0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); }
+}
+.sw-spark {
+  position: absolute; color: #ffd93d; font-size: 16px;
+  animation: swSpark 1.8s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(255,217,61,.8);
+}
+@keyframes swSpark {
+  0%,100% { opacity: 0; transform: scale(.4) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(40deg); }
+}
+
+/* 数轴 2.0 */
+.nl2-trail { fill: rgba(255,138,61,.5); animation: nlTrailFade .7s ease-out forwards; }
+@keyframes nlTrailFade { to { opacity: 0; r: 2; } }
+.nl2-ring { opacity: 0; animation: nlRingPulse 1.2s ease-out infinite; animation-delay: .4s; }
+@keyframes nlRingPulse {
+  0% { opacity: .9; r: 8; stroke-width: 3.5; }
+  100% { opacity: 0; r: 24; stroke-width: 1; }
+}
+.nl2-arrived { animation: nlArrive .5s cubic-bezier(.34,1.56,.64,1); }
+@keyframes nlArrive { 0% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+/* 温度计 2.0 */
+.th2-flake { fill: #bcd0ff; animation: thFlakeFall 3s linear infinite; }
+@keyframes thFlakeFall {
+  from { transform: translateY(0) rotate(0deg); opacity: 0; }
+  15% { opacity: 1; }
+  to { transform: translateY(210px) rotate(160deg); opacity: .2; }
+}
+.th2-sun { transform-origin: 80px 46px; animation: thSunSpin 14s linear infinite; }
+@keyframes thSunSpin { to { transform: rotate(360deg); } }
+.th2-bub { animation: thBubUp 2.2s ease-in infinite; }
+@keyframes thBubUp {
+  from { transform: translateY(0); opacity: 0; }
+  25% { opacity: 1; }
+  to { transform: translateY(-100px); opacity: 0; }
+}
+.th2-num-done { animation: thNumPop .55s cubic-bezier(.34,1.56,.64,1); }
+@keyframes thNumPop { 30% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+/* 分数 2.0 */
+.fr2-pie { opacity: 0; animation: fr2In .55s cubic-bezier(.34,1.56,.64,1) forwards; }
+@keyframes fr2In {
+  from { opacity: 0; transform: translateY(18px) scale(.8); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.fr2-op { opacity: 0; animation: fr2OpIn .4s cubic-bezier(.34,1.56,.64,1) forwards; }
+@keyframes fr2OpIn {
+  from { opacity: 0; transform: scale(.3); }
+  to { opacity: 1; transform: scale(1); }
+}
+.fr2-stars { opacity: 0; animation: fr2Stars 1.4s ease-out forwards; }
+.fr2-stars text { animation: swSpark 1.6s ease-in-out infinite; }
+@keyframes fr2Stars { to { opacity: 1; } }
+
+/* 分拣 2.0 */
+.mt2-bucket {
+  min-width: 116px; text-align: center; padding: 9px 16px; border-radius: 999px;
+  background: linear-gradient(135deg, #6d7ff7, #4d5fe0); color: #fff; font-weight: 900;
+  box-shadow: 0 6px 16px rgba(91,110,245,.35);
+  opacity: 0; animation: mt2BucketIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes mt2BucketIn {
+  from { opacity: 0; transform: translateY(-24px) scale(.7); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.mt2-chip {
+  background: #fff; border: 2px solid #dfe4ff; border-radius: 12px;
+  padding: 8px 13px; font-size: 13px; font-weight: 700; color: var(--text);
+  box-shadow: 0 5px 14px rgba(60,70,130,.12);
+  opacity: 0; animation: mt2ChipDrop .6s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes mt2ChipDrop {
+  from { opacity: 0; transform: translateY(-46px) rotate(-8deg) scale(.7); }
+  55% { opacity: 1; transform: translateY(6px) rotate(3deg) scale(1.04); }
+  to { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+
+/* 汉字 2.0 */
+.ch2-halo { animation: swBlobPulse 3s ease-in-out infinite; transform-origin: 300px 104px; }
+.ch2-main {
+  animation: ch2CharIn .8s cubic-bezier(.25,.8,.35,1) both;
+  transform-origin: 300px 104px;
+}
+@keyframes ch2CharIn {
+  from { opacity: 0; transform: scale(1.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+.ch2-line { opacity: 0; animation: ch2LineIn .45s ease forwards; }
+@keyframes ch2LineIn { to { opacity: 1; } }
+.ch2-bubble { opacity: 0; animation: mt2BucketIn .5s cubic-bezier(.34,1.56,.64,1) forwards; }
+.ch2-hl rect { animation: ch2HlPulse 1.6s 1.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes ch2HlPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+/* 大海 2.0 */
+.sea2-cloud { animation: sea2CloudDrift 12s linear infinite alternate; }
+.sea2-cloud2 { animation-duration: 16s; animation-direction: alternate-reverse; }
+@keyframes sea2CloudDrift { from { transform: translateX(-14px); } to { transform: translateX(24px); } }
+.sea2-sunrise { animation: sea2Rise 2.4s cubic-bezier(.25,.8,.35,1) both; }
+.sea2-moonrise { animation: sea2Rise 2.4s cubic-bezier(.25,.8,.35,1) both; }
+@keyframes sea2Rise { from { transform: translateY(110px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.sea2-rays { transform-origin: 300px 118px; animation: thSunSpin 20s linear infinite; }
+.sea2-shoot { opacity: 0; animation: sea2Shoot 3.5s 1.2s ease-in infinite; }
+@keyframes sea2Shoot {
+  0% { opacity: 0; transform: translate(0,0); }
+  6% { opacity: 1; }
+  18% { opacity: 0; transform: translate(190px,72px); }
+  100% { opacity: 0; transform: translate(190px,72px); }
+}
+.sea2-sail { transform-origin: 300px 112px; animation: sea2SailSway 2.4s ease-in-out infinite alternate; }
+@keyframes sea2SailSway { from { transform: skewX(0deg); } to { transform: skewX(-3deg); } }
+.sea2-foam circle { animation: sea2Foam 2.6s ease-in-out infinite; }
+@keyframes sea2Foam { 0%,100% { opacity: .25; } 50% { opacity: .85; } }
+
+/* 房屋 2.0 */
+.hs2-rain { animation: hs2RainFall 1s linear infinite; }
+@keyframes hs2RainFall {
+  from { transform: translateY(0); opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  to { transform: translateY(172px); opacity: 0; }
+}
+.hs2-splash { opacity: 0; transform-origin: center; transform-box: fill-box; animation: hs2Splash 1s linear infinite; }
+@keyframes hs2Splash {
+  0%, 78% { opacity: 0; transform: scale(.3); }
+  86% { opacity: .9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+.hs2-snow { animation: hs2SnowFall 3.4s linear infinite; }
+@keyframes hs2SnowFall {
+  0% { transform: translate(0,0); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translate(-8px,90px); }
+  100% { transform: translate(6px,180px); opacity: .25; }
+}
+.hs2-smoke {
+  stroke-dasharray: 60; stroke-dashoffset: 60;
+  animation: hs2Smoke 2.6s ease-out infinite;
+}
+@keyframes hs2Smoke {
+  0% { stroke-dashoffset: 60; opacity: 0; transform: translateY(0); }
+  25% { opacity: .9; }
+  70% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 0; opacity: 0; transform: translateY(-14px); }
+}
+.hs2-label { opacity: 0; animation: mt2BucketIn .5s .3s cubic-bezier(.34,1.56,.64,1) forwards; }
+
+/* 线索卡片 2.0 */
+.cl2-card {
+  width: min(158px, 100%); min-height: 78px; display: grid; align-content: center; gap: 4px;
+  background: linear-gradient(180deg, #fff, #f8faff);
+  border: 2px solid #dfe4ff; border-radius: 14px; padding: 10px 13px;
+  box-shadow: 0 8px 18px rgba(60,70,130,.14);
+  opacity: 0; animation: cl2Flip .6s cubic-bezier(.25,.8,.35,1) forwards;
+  perspective: 600px;
+}
+.cl2-card b { color: var(--primary); font-size: 15px; }
+.cl2-card span { color: var(--text-light); font-size: 13px; line-height: 1.5; }
+@keyframes cl2Flip {
+  from { opacity: 0; transform: rotateY(70deg) translateY(10px); }
+  to { opacity: 1; transform: rotateY(0) translateY(0); }
+}
+.cl2-arrow {
+  font-size: 22px; font-weight: 900; color: #ffb36b;
+  opacity: 0; animation: fr2OpIn .4s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+
 /* 小喇叭按钮 */
 .mini-voice {
   border: none; background: var(--primary-light); color: var(--primary);
