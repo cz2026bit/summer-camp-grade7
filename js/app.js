@@ -185,10 +185,22 @@
     async speakRemote(text, lang) {
       if (!this.prefs.remoteUrl) return false;
       try {
+        const format = this.prefs.remoteFormat || "openai-edge";
+        const en = lang === "en";
+        const headers = { "Content-Type": "application/json" };
+        const body = format === "openai-edge"
+          ? {
+              model: "tts-1",
+              input: String(text),
+              voice: this.prefs.edgeVoice || (en ? "en-US-JennyNeural" : "zh-CN-XiaoxiaoNeural"),
+              response_format: "mp3",
+              speed: Math.max(0.25, Math.min(4, this.prefs.rate || 1))
+            }
+          : { text: String(text), lang: lang || guessLang(text), voice: this.prefs.edgeVoice || "" };
         const res = await fetch(this.prefs.remoteUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: String(text), lang: lang || guessLang(text) })
+          headers: headers,
+          body: JSON.stringify(body)
         });
         if (!res.ok) throw new Error("remote tts failed");
         const type = res.headers.get("content-type") || "";
@@ -291,9 +303,29 @@
           <input type="range" id="vs-volume" min="0.4" max="1" step="0.05" value="${TTS.prefs.volume || 1}">
           <span id="vs-volume-val">${Math.round((TTS.prefs.volume || 1) * 100)}%</span></div>
         <div class="vs-row vs-url"><label>云端语音</label>
-          <input id="vs-remote" type="url" placeholder="可填豆包 TTS 代理地址,留空用浏览器语音" value="${esc(TTS.prefs.remoteUrl || "")}">
+          <input id="vs-remote" type="url" placeholder="Edge TTS / 豆包代理地址,留空用浏览器语音" value="${esc(TTS.prefs.remoteUrl || "")}">
           <span></span></div>
-        <div class="vs-hint">豆包语音可以接,但 GitHub Pages 是纯前端,不能把豆包 API Key 写进网页,否则任何人都能看到。这里支持填写你自己的后端/Serverless 代理地址:网页把文本发给代理,代理再安全地调用豆包并返回音频。</div>
+        <div class="vs-row"><label>接口格式</label>
+          <select id="vs-format">
+            <option value="openai-edge" ${(TTS.prefs.remoteFormat || "openai-edge") === "openai-edge" ? "selected" : ""}>Edge TTS / OpenAI兼容</option>
+            <option value="generic" ${TTS.prefs.remoteFormat === "generic" ? "selected" : ""}>通用代理 {text, lang}</option>
+          </select>
+          <span></span></div>
+        <div class="vs-row"><label>Edge音色</label>
+          <select id="vs-edge-voice">
+            ${[
+              ["zh-CN-XiaoxiaoNeural", "晓晓 · 女声 · 自然亲切"],
+              ["zh-CN-YunxiNeural", "云希 · 男声 · 阳光少年"],
+              ["zh-CN-XiaochenNeural", "晓辰 · 女声 · 清晰稳重"],
+              ["zh-CN-XiaoyiNeural", "晓伊 · 女声 · 甜美"],
+              ["zh-CN-YunjianNeural", "云健 · 男声 · 讲解感"],
+              ["zh-CN-YunyangNeural", "云扬 · 男声 · 新闻播报"],
+              ["en-US-JennyNeural", "Jenny · English"],
+              ["en-US-AriaNeural", "Aria · English"]
+            ].map(([v, label]) => `<option value="${v}" ${(TTS.prefs.edgeVoice || "zh-CN-XiaoxiaoNeural") === v ? "selected" : ""}>${label}</option>`).join("")}
+          </select>
+          <span></span></div>
+        <div class="vs-hint">推荐填 Edge TTS 的 OpenAI 兼容代理地址,例如自建服务的 /v1/audio/speech。公共中转接口如果支持 CORS,也可以直接填。豆包语音也能接,但不要把豆包 API Key 写进 GitHub Pages 前端,需要后端/Serverless 代理保护密钥。</div>
         <div style="margin-top:18px">
           <button class="btn btn-primary btn-big" id="vs-save">保存设置</button>
           <button class="btn btn-ghost-dark" id="vs-close">关闭</button>
@@ -309,6 +341,8 @@
       TTS.prefs.rate = parseFloat($("#vs-rate").value);
       TTS.prefs.volume = parseFloat($("#vs-volume").value);
       TTS.prefs.remoteUrl = $("#vs-remote").value.trim();
+      TTS.prefs.remoteFormat = $("#vs-format").value;
+      TTS.prefs.edgeVoice = $("#vs-edge-voice").value;
       TTS.zhVoice = TTS.voices.find(v => v.name === TTS.prefs.zh) || TTS.zhVoice;
       TTS.enVoice = TTS.voices.find(v => v.name === TTS.prefs.en) || TTS.enVoice;
     }
