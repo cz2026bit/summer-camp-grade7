@@ -41,6 +41,20 @@ js/data/curriculum.js  # 40 天课程大纲
 js/data/dayXX.js    # 每天的学习内容与题目(逐天添加)
 ```
 
+## 🎙️ 真人语音(微软晓晓)
+
+课程里所有讲解、题目、单词的语音都用微软 **晓晓 / Jenny 神经网络人声**提前生成,存放在 `audio/` 目录,任何浏览器直接播放。
+
+**新增/修改课程内容后重新生成语音:**
+
+```bash
+pip3 install edge-tts        # 首次
+node tools/collect_texts.mjs # 从课程数据提取所有朗读文本
+python3 tools/gen_audio.py   # 增量生成 MP3 + manifest(已有的自动跳过)
+```
+
+前端播放顺序:预生成真人语音 → 微软在线 → 自定义代理 → 浏览器本地声音(自动回退)。
+
 ## ➕ 如何添加新的一天
 
 1. 复制 `js/data/day01.js` 为 `js/data/day02.js`,修改 `window.DAYS[2] = {...}` 中的内容

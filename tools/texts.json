@@ -1,0 +1,518 @@
+{
+ "2b79ca8f08aeebc1": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "分数加减法:同分母,分母不变分子加减;异分母,先通分再加减。"
+ },
+ "ae6d1abe4b3443ae": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "例如 1/2 + 1/3,通分成 3/6 + 2/6,等于 5/6。"
+ },
+ "503f3aa7d840da6f": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "分数乘法:分子乘分子,分母乘分母,计算前先约分。"
+ },
+ "13c8ff98ea6b77f5": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "分数除法:除以一个数,等于乘它的倒数,口诀是「除法翻个身」。"
+ },
+ "2f2ba201a1b5e2d4": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "记住:加减先通分,乘法先约分,除法翻个身。这是初一有理数运算的地基!"
+ },
+ "17e897bf1ac59202": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "两千年前,中国古人在《九章算术》里就开始用负数记账:卖出粮食记为正,买入记为负。"
+ },
+ "7d7c8cb57582a280": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "而欧洲数学家直到一千多年后,还称负数为「荒谬的数」,不敢使用它。"
+ },
+ "d9e31285ec773313": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "为什么需要负数?因为生活中到处是相反意义的量:零上和零下、收入和支出、地上和地下。"
+ },
+ "4c2c004b20c6c847": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "只说「3」不够,必须说清楚方向:+3 还是 −3。负号,本质上是一个「方向标记」。"
+ },
+ "f7e8f481c42e8cf7": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "记住:0 既不是正数也不是负数,它是正负世界的分界线。"
+ },
+ "1c32e29c3e207464": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "数学家想了一个绝妙的办法:画一条直线,规定原点、正方向和单位长度,这就是数轴。"
+ },
+ "cac37e71fb116724": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "0 坐在原点,正数排在右边,负数排在左边,每个数都有自己唯一的座位。"
+ },
+ "7b542a2538e36107": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "数轴上有一条铁律:越往右越大,越往左越小。"
+ },
+ "78205143bfe0e06c": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "所以 −2 比 −6 大!因为 −2 的座位在 −6 的右边。"
+ },
+ "e86c501120b26e74": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "小技巧:把负数想成欠债,欠 6 元的人比欠 2 元的人更穷。"
+ },
+ "6320e81720e1e08c": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "恩恩,请判断这三句话,哪些是对的?①0 既不是正数也不是负数 ②−0.5 比 −1 小,因为 0.5 比 1 小 ③气温从 −3℃ 升高 5℃ 后是 +2℃. A. ①②③都对. B. 只有①③对. C. 只有①对. D. 只有②③对"
+ },
+ "77f7f6fed843cb0f": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "先把三个判断拆开看:0 是数轴原点,它是正负数的分界线。"
+ },
+ "b5041ff43a515afa": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "比较两个负数,不要只看数字大小,要看它们在数轴上的左右位置。越往右越大。"
+ },
+ "ed0441cb10bebeb0": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "气温升高,就是在数轴上向右走。从 −3℃ 升高 5℃,先想方向,再数格子。"
+ },
+ "f290ddde419791ca": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "第①句:0 既不是正数也不是负数,这是定义,正确!"
+ },
+ "8a45b3ee223d8754": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "第②句是个大陷阱:比较 −0.5 和 −1,要看数轴上的位置。"
+ },
+ "9e169b3715baa616": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "−0.5 在 −1 的右边,所以 −0.5 反而大!负数的世界,数字部分越大,数反而越小。"
+ },
+ "31fc9a2abf0018c5": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "第③句:从 −3 出发向右走 5 格:−3 → −2 → −1 → 0 → 1 → 2,正好是 +2,正确!"
+ },
+ "fc0e2cb78ab40645": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "所以答案是:只有①③对。记住负数比大小的反转规则,初一考试年年考!"
+ },
+ "bd80dab2418994b3": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "科学实验:一杯 22℃ 的水放进冷冻室后,温度每分钟下降 2℃。水降到 0℃ 时开始结冰,再继续降到 −6℃ 时被取出。请问这杯水在冷冻室里一共待了多少分钟?请直接填写数字或“几分钟”。."
+ },
+ "9f8237b70394e9c1": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "遇到降温题,先画温度路线:从 22℃ 一路下降,会先到 0℃。"
+ },
+ "cb15b6fbb245af7e": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "到 0℃ 之后还没结束,题目说继续降到 −6℃,所以要再算第二段。"
+ },
+ "88bb429cd5f5c225": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "每分钟下降 2℃,所以每一段都用「温度差 ÷ 2」。最后把两段时间合起来。"
+ },
+ "1c702789cb7d8c3e": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "别被吓到,BOSS 题就是把简单的步骤连起来。我们分两段算。"
+ },
+ "04760e70b3a9721e": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "第一段:从 22℃ 降到 0℃,一共要降 22℃,每分钟降 2℃,需要 22 除以 2 等于 11 分钟。"
+ },
+ "608978cc96e7e3e2": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "第二段:从 0℃ 降到 −6℃,注意!这段跨进了负数区,但降温幅度就是 6℃,需要 3 分钟。"
+ },
+ "1aba777c52d39cbd": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "很多同学错在第二段:0 到 −6 的距离是 6,不是别的。数轴上数格子就明白了。"
+ },
+ "04c1c6a16c997747": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "总时间:11 + 3 = 14 分钟。恭喜你击败第一个 BOSS!"
+ },
+ "a0f21f4a205d4665": {
+  "voice": "en-US-JennyNeural",
+  "text": "classroom"
+ },
+ "d08e34e15465fb25": {
+  "voice": "en-US-JennyNeural",
+  "text": "classroom. Our classroom is big and bright."
+ },
+ "3c3982af3c9db6f8": {
+  "voice": "en-US-JennyNeural",
+  "text": "library"
+ },
+ "5e2f47b3e57df026": {
+  "voice": "en-US-JennyNeural",
+  "text": "library. I read books in the library."
+ },
+ "2a3dda79f0014c75": {
+  "voice": "en-US-JennyNeural",
+  "text": "playground"
+ },
+ "6c4a795acdc81aac": {
+  "voice": "en-US-JennyNeural",
+  "text": "playground. We play football on the playground."
+ },
+ "d55dff018cc22cc5": {
+  "voice": "en-US-JennyNeural",
+  "text": "uniform"
+ },
+ "3d1934e32eb8e5df": {
+  "voice": "en-US-JennyNeural",
+  "text": "uniform. Students wear uniforms at school."
+ },
+ "8ebfeaebd47090d3": {
+  "voice": "en-US-JennyNeural",
+  "text": "timetable"
+ },
+ "1b96f454f9d0d1c4": {
+  "voice": "en-US-JennyNeural",
+  "text": "timetable. Here is our class timetable."
+ },
+ "4e53b090a82d2465": {
+  "voice": "en-US-JennyNeural",
+  "text": "dictionary"
+ },
+ "233064c459932847": {
+  "voice": "en-US-JennyNeural",
+  "text": "dictionary. Look up new words in the dictionary."
+ },
+ "09a8abb764e493b0": {
+  "voice": "en-US-JennyNeural",
+  "text": "teacher"
+ },
+ "b12120205abe99f1": {
+  "voice": "en-US-JennyNeural",
+  "text": "teacher. Ms. Li is my English teacher."
+ },
+ "70496e8c62584cb7": {
+  "voice": "en-US-JennyNeural",
+  "text": "student"
+ },
+ "50c713e2c78b3f1c": {
+  "voice": "en-US-JennyNeural",
+  "text": "student. I am a middle school student."
+ },
+ "a9e93646da687e60": {
+  "voice": "en-US-JennyNeural",
+  "text": "subject"
+ },
+ "eae6e96beb5a2f9f": {
+  "voice": "en-US-JennyNeural",
+  "text": "subject. Math is my favorite subject."
+ },
+ "7ed7b82198535c87": {
+  "voice": "en-US-JennyNeural",
+  "text": "science"
+ },
+ "73a1362c92141e24": {
+  "voice": "en-US-JennyNeural",
+  "text": "science. We have a science lab at school."
+ },
+ "063c2e2a740e808d": {
+  "voice": "en-US-JennyNeural",
+  "text": "history"
+ },
+ "074ca678c887ce81": {
+  "voice": "en-US-JennyNeural",
+  "text": "history. History is very interesting."
+ },
+ "97af644f8f160f20": {
+  "voice": "en-US-JennyNeural",
+  "text": "homework"
+ },
+ "0034c61b9da1cff1": {
+  "voice": "en-US-JennyNeural",
+  "text": "homework. I do my homework every evening."
+ },
+ "bae8c8885e79b6f5": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "中文说「我是、你是、他是」,一个「是」走天下。但英语的「是」有三张面孔:am、is、are。"
+ },
+ "838a7ddc5d007d91": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "规则其实很简单:我用 am;单数(他、她、它、一个东西)用 is;你、复数(我们、他们、很多东西)用 are。"
+ },
+ "f51acb1e2816f5b1": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "口诀:我用 am,你用 are,is 连着他她它;单数名词用 is,复数全部都用 are。"
+ },
+ "7ebf6d0e388948f1": {
+  "voice": "en-US-JennyNeural",
+  "text": "否定句超简单:Be 后面加 not。She is not a teacher。缩写成 isn't。"
+ },
+ "ee8663c83e35cdaf": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "疑问句像翻跟头:把 Be 甩到句子最前面。Is she a teacher? 回答也要用 Be:Yes, she is。"
+ },
+ "366052f75632d668": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "最大的陷阱:主语是「A 和 B」两个人时,算复数,要用 are!比如 My brother and I are students。"
+ },
+ "c6c4f21a620a241e": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "我用 am,你用 are,is 连着他、她、它;单数名词用 is,复数全部都用 are。"
+ },
+ "ead05c86d01b9ded": {
+  "voice": "en-US-JennyNeural",
+  "text": "下面四个句子里,只有一句语法完全正确。请把完整正确句子抄写出来: ①My brother and I is students. ②The books on the desk is mine. ③Li Ming and his sister are in the library. ④She are my English teacher.."
+ },
+ "8635eb1235add8a1": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "做 Be 动词题,第一步不是看选项,而是抓真正的主语。"
+ },
+ "40a2cbc98d399cc0": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "主语分好类,Be 动词就像自动归队:I 用 am,单数用 is,复数用 are。"
+ },
+ "74f9db0e010a3530": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "看到 on the desk、in the library 这类地点短语,别被带跑,它们不是主语。"
+ },
+ "78b5dafa30a1ca16": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "这道题考的是「找主语」的真功夫,一句一句来。"
+ },
+ "f1f73c2e323433f2": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "A 句主语是 My brother and I,两个人,是复数,应该用 are,错!"
+ },
+ "4d37821e6fbb5a8e": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "B 句有迷惑项:on the desk 只是修饰,真正的主语是 The books,复数,该用 are,错!"
+ },
+ "2b97a3d7efa66bc4": {
+  "voice": "en-US-JennyNeural",
+  "text": "C 句:Li Ming and his sister,两个人用 are,完全正确!"
+ },
+ "5b258c64517de7e9": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "D 句:She 是单数,必须用 is,错。记住:判断 Be 动词,先揪出真正的主语!"
+ },
+ "7d037657875d1d1e": {
+  "voice": "en-US-JennyNeural",
+  "text": "Hello! My name is Li Ming. I am twelve years old. In September, I will be a student at Sunshine Middle School. My new school is big and beautiful. There are thirty classrooms in the teaching building. The library is next to the playground. There are many interesting books in it. I love reading, so the library is my favorite place. My favorite subject is science, because it is fun. My sister likes history. She says history is like a time machine. At my new school, students wear blue uniforms. I think they are cool. I can't wait for the new term!"
+ },
+ "b038b8a74866bd8a": {
+  "voice": "en-US-JennyNeural",
+  "text": "推理题:根据短文,Li Ming 为什么最喜欢图书馆?请用英文或中文简短回答。."
+ },
+ "69690e24ce621af7": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "阅读推理题要像侦探:每个选项都要回原文找证据。"
+ },
+ "f720ba84b2e7dcca": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "看见 so,就要连起来读:前一句是原因,后一句是结果。"
+ },
+ "48d75af67b552f51": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "不要只找相同单词,还要判断意思有没有被偷换:boring、in、doesn't like 都要核对。"
+ },
+ "705bb1e1b8d120d3": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "推理题的秘诀:每个选项都回原文找证据,不能凭感觉。"
+ },
+ "88bc9d31821e2ef0": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "A 选项:原文说姐姐觉得历史像时光机,这是喜欢,不是无聊,错!"
+ },
+ "e5390c8b5867b04f": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "B 选项:原文有一个关键词 so——I love reading, so the library is my favorite place。「因为爱读书,所以最爱图书馆」,因果关系完全吻合,对!"
+ },
+ "1dc331920a384f85": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "C 选项:原文说 The library is next to the playground,在操场旁边,不在教学楼里,错。"
+ },
+ "c9b91f2e2459394f": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "D 选项:他说校服 cool(很酷),是喜欢,错。看到了吗?连词 so、because 就是阅读理解的藏宝图!"
+ },
+ "2e9691eb5c97ee74": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "「和」是汉语里的变音大王:和平的 hé,应和的 hè,和面的 huó,和药的 huò,还有打麻将的 hú!"
+ },
+ "5915431d37759ff9": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "怎么记?密码只有四个字:据义定音——先想意思,再定读音。"
+ },
+ "6024423356816ab1": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "「应和」的意思是声音相互呼应,一唱一和,这时读第四声 hè。"
+ },
+ "5e325b6d29b8a789": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "初一还有一批易错字音:确凿的凿读 záo,菜畦的畦读 qí,酝酿的酿读 niàng,贮蓄的贮读 zhù。"
+ },
+ "901e85e6f18bbf3f": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "易错字形也用理解法记:「翻来覆去」的覆是翻转,和覆盖同字;「人声鼎沸」的鼎是大锅,人声像锅里的水沸腾。"
+ },
+ "6b2945ba120d02bf": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "户外音乐会上,歌手唱一句,观众跟着唱一句,记者写道:「台下观众纷纷应和,人声鼎沸。」这里「和」应该读什么?请写拼音,也可以写出一个同读音词语。."
+ },
+ "918de9cb030d8aea": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "多音字不要硬背,先看意思。这个方法叫「据义定音」。"
+ },
+ "e3c674f3cf3f9214": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "如果是声音相互呼应、跟着唱,「和」就读 hè。"
+ },
+ "eb32828f502fd82b": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "再回到选项里找同样意思的词,读音就能锁定。"
+ },
+ "2009907b6aaf2ac4": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "先用密码「据义定音」:观众跟着歌手唱,这是呼应、跟唱的意思,所以「应和」读 hè。"
+ },
+ "66177e5bc2a9bd6f": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "再看选项:「曲高和寡」意思是曲调太高雅,能跟着唱的人很少——这个「和」也是跟唱,同样读 hè!"
+ },
+ "b90e1577401cf570": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "「和平共处」「风和日丽」的和是平和的意思,读 hé。"
+ },
+ "3fa72d1eaa1ce449": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "「和衣而卧」指穿着衣服睡觉,读 hé。"
+ },
+ "900d7fbbe8e7d68a": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "所以答案是「曲高和寡」。学多音字不用死记,想清楚意思,读音自然就对了。"
+ },
+ "b53f39f440e96375": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "公元 207 年,53 岁的曹操北征乌桓得胜归来,路过碣石山,登山观海,写下这首《观沧海》。"
+ },
+ "59f7383cfee953b1": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "前面几句写实景:水何澹澹,山岛竦峙,树木丛生,秋风萧瑟,洪波涌起——大海在他眼前翻腾。"
+ },
+ "2f25c3b70e41fffa": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "然后奇迹发生了:日月之行,若出其中;星汉灿烂,若出其里。"
+ },
+ "3a3521623c2fa702": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "太阳月亮的运行、灿烂的银河,好像都从这片大海中升起——这还是眼睛看到的景象吗?不,这是想象!"
+ },
+ "729d099ba12ce257": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "曹操把大海写得能吞吐日月星辰,其实是在说:我的胸怀,也装得下整个天下。这种手法叫「借景抒情」。"
+ },
+ "22392606b9be8be4": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "记住这个公式:眼前的景 + 心中的情 = 千古名句。初中古诗鉴赏,一半都在考它。"
+ },
+ "94961e64bf1d53e5": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "深度思考:「日月之行,若出其中」明明不是真实景象(太阳月亮不可能从这片海里升起),曹操为什么要这样写?. A. 他年纪大了,看错了. B. 用夸张的想象表现大海的壮阔,寄托自己吞吐天下的雄心. C. 古人不懂天文,以为日月真的从海里升起. D. 为了押韵,随便写的"
+ },
+ "c859dd4f1b312298": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "古诗鉴赏先分清两层:眼前看到的景,和心里涌起的情。"
+ },
+ "5dcbe3a009c3d8eb": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "诗人写日月星辰好像从海里出来,这是想象和夸张,不是自然课记录。"
+ },
+ "2fd25836da1744da": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "遇到这种句子,就问:诗人为什么要把景写得这么大?它往往在托起心中的志向。"
+ },
+ "c3520c2abacd9e9b": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "好诗往往「说一物,指另一物」。曹操写海,真的只是写海吗?"
+ },
+ "d2b028afb2f1e9dc": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "他刚打了大胜仗,天下统一近在眼前,此刻心潮澎湃,和眼前翻腾的大海产生了共鸣。"
+ },
+ "79ee3971e1da3e08": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "于是他放飞想象:这片海大到能吞吐日月、容纳银河——其实是在说,我的抱负也这么大!"
+ },
+ "9ed06bfa02c7de35": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "所以答案是 B:夸张的想象 + 借景抒情。景是外壳,情才是内核。"
+ },
+ "ebbc8086711916b5": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "以后读古诗,先问自己:诗人此刻是什么处境、什么心情?读懂了人,就读懂了诗。"
+ },
+ "5a6e08a829212b4b": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "1965 年,云南元谋,考古学家挖出两颗古人类门齿——距今约 170 万年,这就是我国已知最早的古人类:元谋人。"
+ },
+ "b0d34959837d7a9a": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "再看北京周口店,距今约 70 万年的北京人已经会使用天然火:取暖、烧烤、驱赶野兽。"
+ },
+ "5dc4322ba4a633de": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "又过了几十万年,人类学会了种地,定居下来。有意思的事情来了——"
+ },
+ "2acda31a0bd51530": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "长江边的河姆渡人,种水稻,住干栏式房屋:房子架在木桩上,悬空!"
+ },
+ "67280151c337407b": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "黄河边的半坡人,种粟(小米),住半地穴式房屋:房子挖进地下半截!"
+ },
+ "832261f73951cff3": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "同一个时代,为什么房子的差别这么大?先自己想 10 秒,再做下面这道题。"
+ },
+ "0bd5769ee757b89b": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "思考题:河姆渡人把房子架空(干栏式),半坡人把房子挖进地下(半地穴式),造成这种差别的根本原因是什么?. A. 两地人审美不同,喜欢的样式不一样. B. 河姆渡人技术更先进,会建更复杂的房子. C. 南方潮湿多雨需要防潮通风,北方寒冷干燥需要保暖防寒. D. 半坡人比较穷,建不起高房子"
+ },
+ "434885590d0caeb3": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "历史题要追问:同一个时代,为什么生活方式不一样?先看自然环境。"
+ },
+ "135c220086405808": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "南方潮湿多雨,房子架起来更容易防潮通风;北方冬天冷,半地穴式更容易保暖。"
+ },
+ "1e28f63e03a50cfc": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "所以答题时不要选表面原因,要找能同时解释两种房子的根本原因。"
+ },
+ "b6a66fe32daf76df": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "历史不是死记硬背,而是问一个字:为什么?"
+ },
+ "2c0d7a1a83d6a6f6": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "河姆渡在长江流域,气候潮湿多雨,房子贴地就会发霉、进水、生虫,所以架空——干栏式,通风又防潮。"
+ },
+ "b64b4feabf7cf1a5": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "半坡在黄河流域,冬天寒冷干燥,把房子挖进地下半截,土层就像天然棉被,冬暖夏凉。"
+ },
+ "3073184602c70adc": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "连种的粮食都是同一个道理:南方水多种水稻,北方缺水种耐旱的粟。"
+ },
+ "5b16e710b4d28916": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "记住这把万能钥匙:自然环境决定生活方式。以后学地理、学历史,处处用得上!"
+ },
+ "9b9967a56830bbda": {
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "text": "你好恩恩,我是你的学习伙伴,这一关我们一起加油!"
+ },
+ "830b307a02b268d2": {
+  "voice": "en-US-JennyNeural",
+  "text": "Hello! Welcome to Sunshine Middle School."
+ }
+}

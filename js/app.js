@@ -182,6 +182,125 @@
       if (/[；;：:]/.test(chunk.slice(-1))) return 120;
       return 70;
     },
+    // ---------- 预生成微软真人语音(audio/*.mp3,由 tools/gen_audio.py 生成) ----------
+    manifest: null,
+    cleanText(text) {
+      return String(text)
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{20E3}]/gu, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    },
+    loadManifest() {
+      fetch("audio/manifest.json")
+        .then(r => r.ok ? r.json() : null)
+        .then(m => { this.manifest = m; })
+        .catch(() => {});
+    },
+    async speakPregen(clean, lang, token) {
+      if (!this.manifest) return false;
+      try {
+        const voice = lang === "en" ? "en-US-JennyNeural" : "zh-CN-XiaoxiaoNeural";
+        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(voice + "|" + clean));
+        const h = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+        if (!this.manifest[h]) return false;
+        if (token !== this.token) return true;
+        return await new Promise(resolve => {
+          const audio = new Audio("audio/" + h + ".mp3");
+          audio.volume = Math.max(0.2, Math.min(1, this.prefs.volume || 1));
+          audio.playbackRate = this.prefs.rate || 1;
+          this.currentAudio = audio;
+          audio.onended = () => resolve(true);
+          audio.onerror = () => resolve(false);
+          audio.play().catch(() => resolve(false));
+        });
+      } catch (e) { return false; }
+    },
+    // ---------- 微软 Edge-TTS(浏览器直连,免配置,神经网络人声) ----------
+    edgeCache: new Map(),
+    edgeFails: 0,
+    edgeVoiceZh() { return this.prefs.edgeVoice || "zh-CN-XiaoxiaoNeural"; },
+    edgeVoiceEn() { return this.prefs.edgeVoiceEn || "en-US-JennyNeural"; },
+    async genSecMsGec() {
+      // Sec-MS-GEC = SHA256(Windows时间戳(5分钟对齐) + TrustedClientToken),大写十六进制
+      const ticks = (Math.floor(Date.now() / 1000 / 300) * 300 + 11644473600) * 10000000;
+      const str = ticks + "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    },
+    fetchEdgeAudio(text, voice, ratePct) {
+      return new Promise((resolve, reject) => {
+        this.genSecMsGec().then(gec => {
+          const reqId = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, "0")).join("");
+          const url = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1" +
+            "?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4" +
+            "&Sec-MS-GEC=" + gec + "&Sec-MS-GEC-Version=1-131.0.2903.99" +
+            "&ConnectionId=" + reqId;
+          const ws = new WebSocket(url);
+          ws.binaryType = "arraybuffer";
+          const chunks = [];
+          const timer = setTimeout(() => { try { ws.close(); } catch (e) {} reject(new Error("edge tts timeout")); }, 10000);
+          ws.onopen = () => {
+            ws.send("X-Timestamp:" + new Date().toString() + "\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n" +
+              JSON.stringify({ context: { synthesis: { audio: { metadataoptions: { sentenceBoundaryEnabled: "false", wordBoundaryEnabled: "false" }, outputFormat: "audio-24khz-48kbitrate-mono-mp3" } } } }));
+            const sign = ratePct >= 0 ? "+" : "";
+            const safe = String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${voice}'><prosody pitch='+0Hz' rate='${sign}${ratePct}%' volume='+0%'>${safe}</prosody></voice></speak>`;
+            ws.send("X-RequestId:" + reqId + "\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:" + new Date().toString() + "\r\nPath:ssml\r\n\r\n" + ssml);
+          };
+          ws.onmessage = (ev) => {
+            if (typeof ev.data === "string") {
+              if (ev.data.indexOf("Path:turn.end") >= 0) {
+                clearTimeout(timer);
+                try { ws.close(); } catch (e) {}
+                resolve(new Blob(chunks, { type: "audio/mpeg" }));
+              }
+            } else {
+              const data = new Uint8Array(ev.data);
+              const headerLen = (data[0] << 8) | data[1];
+              const header = new TextDecoder().decode(data.slice(2, 2 + headerLen));
+              if (header.indexOf("Path:audio") >= 0) chunks.push(data.slice(2 + headerLen));
+            }
+          };
+          ws.onerror = () => { clearTimeout(timer); reject(new Error("edge ws error")); };
+        }).catch(reject);
+      });
+    },
+    async speakEdge(text, lang, token) {
+      if (this.edgeFails >= 2) return false; // 连续失败则本次会话不再尝试,避免每句都卡顿
+      try {
+        const en = lang === "en";
+        const voice = en ? this.edgeVoiceEn() : this.edgeVoiceZh();
+        const ratePct = Math.round(((this.prefs.rate || 1) - 1) * 100) + (en ? -8 : 0);
+        const key = voice + "|" + ratePct + "|" + text;
+        let blobUrl = this.edgeCache.get(key);
+        if (!blobUrl) {
+          const blob = await this.fetchEdgeAudio(text, voice, ratePct);
+          if (!blob || blob.size < 200) throw new Error("empty audio");
+          blobUrl = URL.createObjectURL(blob);
+          this.edgeCache.set(key, blobUrl);
+          if (this.edgeCache.size > 80) {
+            const k0 = this.edgeCache.keys().next().value;
+            URL.revokeObjectURL(this.edgeCache.get(k0));
+            this.edgeCache.delete(k0);
+          }
+        }
+        this.edgeFails = 0;
+        if (token !== this.token) return true; // 已被停止,但音频获取成功
+        await new Promise(resolve => {
+          const audio = new Audio(blobUrl);
+          audio.volume = Math.max(0.2, Math.min(1, this.prefs.volume || 1));
+          this.currentAudio = audio;
+          audio.onended = resolve;
+          audio.onerror = resolve;
+          audio.play().catch(resolve);
+        });
+        return true;
+      } catch (e) {
+        this.edgeFails += 1;
+        console.warn("微软语音暂不可用,回退本地声音:", e);
+        return false;
+      }
+    },
     async speakRemote(text, lang) {
       if (!this.prefs.remoteUrl) return false;
       try {
@@ -231,18 +350,30 @@
       const token = this.token;
       const en = lang === "en";
       const chunks = this.splitText(text);
+      const cleanAll = this.cleanText(text);
       const voice = en ? this.enVoice : this.zhVoice;
       const rate = (this.prefs.rate || 1) * (en ? 0.86 : 0.94);
       const pitch = en ? 1 : 1.04;
       const volume = Math.max(0.2, Math.min(1, this.prefs.volume || 1));
       try { speechSynthesis.cancel(); } catch (e) {}
-      if (this.prefs.remoteUrl) {
-        return this.speakRemote(text, lang).then(ok => {
-          if (ok) return;
-          return chunks.reduce((chain, chunk) => chain.then(() => this.speakChunk(chunk, token, voice, en, rate, pitch, volume)), Promise.resolve());
+      const localFallback = () => chunks.reduce((chain, chunk) =>
+        chain.then(() => this.speakChunk(chunk, token, voice, en, rate, pitch, volume)), Promise.resolve());
+      const engine = this.prefs.engine || "ms";
+      if (engine === "local" || !cleanAll) return localFallback();
+      // 默认引擎:预生成微软真人语音 → 微软在线 → 自定义代理 → 浏览器本地声音
+      return this.speakPregen(cleanAll, lang, token).then(okPre => {
+        if (okPre || token !== this.token) return;
+        return this.speakEdge(cleanAll, lang, token).then(ok => {
+          if (ok || token !== this.token) return;
+          if (this.prefs.remoteUrl) {
+            return this.speakRemote(cleanAll, lang).then(ok2 => {
+              if (ok2 || token !== this.token) return;
+              return localFallback();
+            });
+          }
+          return localFallback();
         });
-      }
-      return chunks.reduce((chain, chunk) => chain.then(() => this.speakChunk(chunk, token, voice, en, rate, pitch, volume)), Promise.resolve());
+      });
     },
     speakChunk(chunk, token, voice, en, rate, pitch, volume) {
       return new Promise(resolve => {
@@ -267,6 +398,7 @@
     }
   };
   TTS.init();
+  TTS.loadManifest();
   function guessLang(text) {
     const ascii = (String(text).match(/[a-zA-Z]/g) || []).length;
     const han = (String(text).match(/[一-龥]/g) || []).length;
@@ -286,46 +418,47 @@
       <div class="gate-card voice-card">
         <div class="gate-icon">🎙️</div>
         <h2>语音设置</h2>
-        <div class="voice-status">
-          中文:${esc(TTS.zhVoice ? TTS.zhVoice.name : "未找到")} · ${TTS.qualityLabel(TTS.zhVoice)}<br>
-          英文:${esc(TTS.enVoice ? TTS.enVoice.name : "未找到")} · ${TTS.qualityLabel(TTS.enVoice)}
+        <div class="voice-status" id="vs-status">
+          当前引擎:${(TTS.prefs.engine || "ms") === "ms" ? "🌟 微软晓晓真人语音" : "浏览器本地声音"}${TTS.manifest ? " · 语音包已加载 ✓" : ""}
         </div>
-        <div class="vs-row"><label>中文声音</label>
+        <div class="vs-row"><label>语音引擎</label>
+          <select id="vs-engine">
+            <option value="ms" ${(TTS.prefs.engine || "ms") === "ms" ? "selected" : ""}>🌟 微软晓晓真人语音(推荐)</option>
+            <option value="local" ${TTS.prefs.engine === "local" ? "selected" : ""}>浏览器本地声音</option>
+          </select>
+          <span></span></div>
+        <div class="vs-row"><label>试听</label>
+          <span style="display:flex;gap:8px">
+            <button class="mini-voice" id="vs-try-zh">🔊 中文(晓晓)</button>
+            <button class="mini-voice" id="vs-try-en">🔊 英文(Jenny)</button>
+          </span>
+          <span></span></div>
+        <details class="vs-local"><summary>本地声音备选(微软人声连不上时使用)</summary>
+        <div class="vs-row"><label>中文备选</label>
           <select id="vs-zh">${options(zhList, TTS.zhVoice)}</select>
-          <button class="mini-voice" id="vs-try-zh">🔊 试听</button></div>
-        <div class="vs-row"><label>英文声音</label>
+          <span></span></div>
+        <div class="vs-row"><label>英文备选</label>
           <select id="vs-en">${options(enList, TTS.enVoice)}</select>
-          <button class="mini-voice" id="vs-try-en">🔊 试听</button></div>
+          <span></span></div>
+        </details>
         <div class="vs-row"><label>语速</label>
           <input type="range" id="vs-rate" min="0.7" max="1.3" step="0.05" value="${TTS.prefs.rate || 1}">
           <span id="vs-rate-val">${TTS.prefs.rate || 1}x</span></div>
         <div class="vs-row"><label>音量</label>
           <input type="range" id="vs-volume" min="0.4" max="1" step="0.05" value="${TTS.prefs.volume || 1}">
           <span id="vs-volume-val">${Math.round((TTS.prefs.volume || 1) * 100)}%</span></div>
-        <div class="vs-row vs-url"><label>云端语音</label>
-          <input id="vs-remote" type="url" placeholder="Edge TTS / 豆包代理地址,留空用浏览器语音" value="${esc(TTS.prefs.remoteUrl || "")}">
+        <details class="vs-local"><summary>高级:自定义语音代理(一般不用填)</summary>
+        <div class="vs-row vs-url"><label>代理地址</label>
+          <input id="vs-remote" type="url" placeholder="自建 TTS 代理地址,留空即可" value="${esc(TTS.prefs.remoteUrl || "")}">
           <span></span></div>
         <div class="vs-row"><label>接口格式</label>
           <select id="vs-format">
-            <option value="openai-edge" ${(TTS.prefs.remoteFormat || "openai-edge") === "openai-edge" ? "selected" : ""}>Edge TTS / OpenAI兼容</option>
+            <option value="openai-edge" ${(TTS.prefs.remoteFormat || "openai-edge") === "openai-edge" ? "selected" : ""}>OpenAI 兼容 /v1/audio/speech</option>
             <option value="generic" ${TTS.prefs.remoteFormat === "generic" ? "selected" : ""}>通用代理 {text, lang}</option>
           </select>
           <span></span></div>
-        <div class="vs-row"><label>Edge音色</label>
-          <select id="vs-edge-voice">
-            ${[
-              ["zh-CN-XiaoxiaoNeural", "晓晓 · 女声 · 自然亲切"],
-              ["zh-CN-YunxiNeural", "云希 · 男声 · 阳光少年"],
-              ["zh-CN-XiaochenNeural", "晓辰 · 女声 · 清晰稳重"],
-              ["zh-CN-XiaoyiNeural", "晓伊 · 女声 · 甜美"],
-              ["zh-CN-YunjianNeural", "云健 · 男声 · 讲解感"],
-              ["zh-CN-YunyangNeural", "云扬 · 男声 · 新闻播报"],
-              ["en-US-JennyNeural", "Jenny · English"],
-              ["en-US-AriaNeural", "Aria · English"]
-            ].map(([v, label]) => `<option value="${v}" ${(TTS.prefs.edgeVoice || "zh-CN-XiaoxiaoNeural") === v ? "selected" : ""}>${label}</option>`).join("")}
-          </select>
-          <span></span></div>
-        <div class="vs-hint">推荐填 Edge TTS 的 OpenAI 兼容代理地址,例如自建服务的 /v1/audio/speech。公共中转接口如果支持 CORS,也可以直接填。豆包语音也能接,但不要把豆包 API Key 写进 GitHub Pages 前端,需要后端/Serverless 代理保护密钥。</div>
+        </details>
+        <div class="vs-hint">🌟 课程语音已用<b>微软「晓晓」神经网络人声</b>提前录制好(英文为 Jenny),所有浏览器都能直接播放,和真人非常接近。语速调节对真人语音同样有效。</div>
         <div style="margin-top:18px">
           <button class="btn btn-primary btn-big" id="vs-save">保存设置</button>
           <button class="btn btn-ghost-dark" id="vs-close">关闭</button>
@@ -336,15 +469,17 @@
     $("#vs-rate").oninput = () => { $("#vs-rate-val").textContent = $("#vs-rate").value + "x"; };
     $("#vs-volume").oninput = () => { $("#vs-volume-val").textContent = Math.round(parseFloat($("#vs-volume").value) * 100) + "%"; };
     function applySel() {
+      TTS.prefs.engine = $("#vs-engine").value;
       TTS.prefs.zh = $("#vs-zh").value;
       TTS.prefs.en = $("#vs-en").value;
       TTS.prefs.rate = parseFloat($("#vs-rate").value);
       TTS.prefs.volume = parseFloat($("#vs-volume").value);
       TTS.prefs.remoteUrl = $("#vs-remote").value.trim();
       TTS.prefs.remoteFormat = $("#vs-format").value;
-      TTS.prefs.edgeVoice = $("#vs-edge-voice").value;
+      TTS.edgeFails = 0; // 重新尝试微软人声
       TTS.zhVoice = TTS.voices.find(v => v.name === TTS.prefs.zh) || TTS.zhVoice;
       TTS.enVoice = TTS.voices.find(v => v.name === TTS.prefs.en) || TTS.enVoice;
+      $("#vs-status").textContent = "当前引擎:" + (TTS.prefs.engine === "ms" ? "🌟 微软晓晓真人语音" : "浏览器本地声音") + (TTS.manifest ? " · 语音包已加载 ✓" : "");
     }
     $("#vs-try-zh").onclick = () => { applySel(); TTS.stop(); TTS.speak("你好恩恩,我是你的学习伙伴,这一关我们一起加油!", "zh"); };
     $("#vs-try-en").onclick = () => { applySel(); TTS.stop(); TTS.speak("Hello! Welcome to Sunshine Middle School.", "en"); };
