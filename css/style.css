@@ -285,6 +285,141 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 .reading-passage p { margin: 8px 0; }
 .reading-tip { font-size: 13px; color: var(--text-light); }
 
+/* ===== 游戏化:顶栏状态 ===== */
+.game-chip {
+  font-size: 12px; font-weight: 700; background: rgba(255,255,255,.2);
+  padding: 6px 14px; border-radius: 999px; white-space: nowrap;
+}
+
+/* ===== 游戏化:首页面板 ===== */
+.game-panel {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 18px;
+}
+.game-stat {
+  background: #f6f7ff; border-radius: 14px; padding: 12px 20px; min-width: 110px;
+}
+.game-stat .gs-num { font-size: 24px; font-weight: 800; color: var(--primary); }
+.game-stat .gs-label { font-size: 12px; color: var(--text-light); }
+.game-stat .gs-sub { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+.lv-bar { height: 8px; background: #e5e8f5; border-radius: 999px; overflow: hidden; margin-top: 6px; }
+.lv-bar > div { height: 100%; background: linear-gradient(90deg,#ffd93d,#ff8a3d); border-radius: 999px; }
+.badges-stat { min-width: 200px; }
+.badge-row { font-size: 22px; letter-spacing: 4px; margin-top: 4px; }
+.badge-item { opacity: .22; filter: grayscale(1); cursor: help; transition: transform .15s; }
+.badge-item.owned { opacity: 1; filter: none; }
+.badge-item:hover { transform: scale(1.3); }
+
+/* ===== 诚信之门 ===== */
+.gate-overlay {
+  position: fixed; inset: 0; background: rgba(30,32,60,.66); z-index: 500;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeUp .25s ease both;
+}
+.gate-card {
+  background: #fff; border-radius: 20px; padding: 34px; max-width: 480px; text-align: center;
+  animation: popIn .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+.gate-icon { font-size: 52px; }
+.gate-card h2 { margin: 8px 0 12px; }
+.gate-text { font-size: 14px; color: var(--text-light); line-height: 1.9; }
+.gate-promise {
+  background: var(--primary-light); border-radius: 12px; padding: 14px;
+  font-weight: 700; margin: 18px 0; line-height: 1.8;
+}
+.btn-ghost-dark { background: none; color: var(--text-light); font-size: 13px; margin-top: 10px; }
+
+/* ===== 动画课堂 ===== */
+.lesson-player {
+  background: linear-gradient(135deg, #f3f5ff, #eefaf8);
+  border: 2px solid #d9dff8; border-radius: 16px; padding: 18px 20px; margin: 14px 0;
+}
+.lesson-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.lesson-title { font-weight: 800; font-size: 15px; }
+.lesson-ctrl .btn { font-size: 13px; padding: 8px 20px; }
+.lesson-stage { margin-top: 14px; max-height: 340px; overflow-y: auto; }
+.lesson-hint { color: var(--text-light); font-size: 13px; }
+.lesson-line {
+  display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px;
+  border-radius: 12px; margin-bottom: 8px; font-size: 15px; line-height: 1.8;
+  background: rgba(255,255,255,.72); opacity: .62;
+  animation: lessonIn .5s ease both; transition: all .3s;
+}
+.lesson-line.current {
+  opacity: 1; background: #fff; box-shadow: 0 4px 14px rgba(91,110,245,.16);
+  border-left: 4px solid var(--primary); font-weight: 600;
+}
+.lesson-emoji { font-size: 24px; flex: none; }
+@keyframes lessonIn {
+  from { opacity: 0; transform: translateY(14px) scale(.97); }
+  to { transform: translateY(0) scale(1); }
+}
+
+/* 小喇叭按钮 */
+.mini-voice {
+  border: none; background: var(--primary-light); color: var(--primary);
+  font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 999px;
+  cursor: pointer; font-family: inherit; vertical-align: middle;
+}
+.mini-voice:hover { background: var(--primary); color: #fff; }
+
+/* ===== BOSS 题 ===== */
+.boss-q {
+  border: 2px solid #ffb26b !important;
+  background: linear-gradient(135deg, #fff8f0, #fff) !important;
+  box-shadow: 0 6px 22px rgba(255,138,61,.18) !important;
+}
+.boss-q .q-num { background: linear-gradient(135deg,#ff8a3d,#ff5252); animation: bossPulse 1.4s infinite; }
+@keyframes bossPulse {
+  0%,100% { transform: scale(1); } 50% { transform: scale(1.18); }
+}
+
+/* ===== 彩带 & 浮动提示 ===== */
+.confetti {
+  position: fixed; top: -14px; width: 10px; height: 14px; z-index: 999;
+  border-radius: 3px; pointer-events: none;
+  animation: confFall 2.2s ease-in forwards;
+}
+@keyframes confFall {
+  to { transform: translateY(105vh) rotate(720deg); opacity: .4; }
+}
+.float-tip {
+  position: fixed; z-index: 999; pointer-events: none;
+  font-weight: 900; font-size: 20px; color: #ff8a3d;
+  text-shadow: 0 2px 8px rgba(255,138,61,.4);
+  animation: tipUp 1.3s ease-out forwards;
+}
+@keyframes tipUp {
+  from { opacity: 0; transform: translateY(6px) scale(.8); }
+  20% { opacity: 1; transform: translateY(0) scale(1.15); }
+  to { opacity: 0; transform: translateY(-52px) scale(1); }
+}
+.combo-chip {
+  font-size: 14px; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg,#ff8a3d,#ff5252);
+  padding: 8px 18px; border-radius: 999px;
+  animation: bossPulse 1s infinite;
+}
+
+/* ===== 结算战利品 ===== */
+.loot-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.loot-item {
+  background: #f6f2ff; color: #6d3ef0; font-size: 14px; font-weight: 700;
+  padding: 8px 18px; border-radius: 999px;
+  animation: popIn .5s cubic-bezier(.34,1.56,.64,1) both;
+}
+.loot-item.lvup { background: linear-gradient(135deg,#ffd93d,#ff8a3d); color: #fff; }
+.loot-item.badge-new { background: linear-gradient(135deg,#26b8a5,#5b6ef5); color: #fff; }
+
+/* 用时异常标记 */
+.fast-flag {
+  font-size: 11px; font-weight: 700; color: #e67e22;
+  background: #fdf3e7; padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+}
+
+/* 防复制 */
+.no-copy { -webkit-user-select: none; user-select: none; }
+.no-copy input { -webkit-user-select: auto; user-select: auto; }
+
 /* ===== 知识点单元 ===== */
 .unit {
   border-top: 2px dashed #e5e8f5; margin-top: 24px; padding-top: 20px;
