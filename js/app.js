@@ -2,7 +2,21 @@
 (function () {
   const app = document.getElementById("app");
   const TOTAL_DAYS = 40;
-  const STORE_KEY = "summer_camp_v1";
+  const STORE_KEY = "summer_camp_v2";
+
+  // ---------- 科目定义 ----------
+  const SUBJECTS = {
+    math:      { label: "数学", icon: "🔢" },
+    english:   { label: "英语", icon: "🔤" },
+    chinese:   { label: "语文", icon: "📝" },
+    history:   { label: "历史", icon: "🏺" },
+    geography: { label: "地理", icon: "🌍" },
+    biology:   { label: "生物", icon: "🌱" },
+    civics:    { label: "道法", icon: "⚖️" },
+    review:    { label: "复习", icon: "🔁" }
+  };
+  function subLabel(key) { return (SUBJECTS[key] || { label: key }).label; }
+  function subIcon(key) { return (SUBJECTS[key] || { icon: "📘" }).icon; }
 
   // ---------- 本地存储 ----------
   function loadStore() {
@@ -24,9 +38,13 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
   function fmtDuration(ms) {
-    const min = Math.round(ms / 60000);
+    const min = Math.max(1, Math.round(ms / 60000));
     if (min < 60) return min + " 分钟";
     return Math.floor(min / 60) + " 小时 " + (min % 60) + " 分钟";
+  }
+  function normalize(s) {
+    return String(s).toLowerCase().replace(/\s+/g, " ").trim()
+      .replace(/[’']/g, "'").replace(/[−–]/g, "-");
   }
 
   // ================================================================
@@ -37,7 +55,6 @@
     const doneCount = Object.keys(loadStore()).filter(k => /^day\d+$/.test(k)).length;
     const pct = Math.round(doneCount / TOTAL_DAYS * 100);
 
-    // 推荐:第一个未完成且有内容的天
     let recommended = null;
     for (let i = 1; i <= TOTAL_DAYS; i++) {
       if (window.DAYS[i] && !getResult(i)) { recommended = i; break; }
@@ -46,7 +63,7 @@
     let html = `
       <div class="hero">
         <h1>📅 40 天小升初冲刺计划</h1>
-        <p>每天 2~4 小时 · 数学 + 英语 · 学习 → 做题 → 对答案 → 打分 → 导出报告</p>
+        <p>每天 2~4 小时 · 数学 / 英语 / 语文 / 副科 · 边学边练 → 打分 → 导出报告给家长</p>
         <div class="progress-wrap">
           <div class="progress-bar"><div style="width:0%" data-target="${pct}%"></div></div>
           <div class="progress-label">已完成 ${doneCount} / ${TOTAL_DAYS} 天(${pct}%)</div>
@@ -75,13 +92,17 @@
              ${hasContent ? `data-day="${c.day}"` : ""}>
           <div class="day-num">第 ${c.day} 天</div>
           ${badge}
-          <div class="day-topics">🔢 <b>${esc(c.math)}</b><br>🔤 ${esc(c.english)}</div>
+          <div class="day-topics">
+            🔢 <b>${esc(c.math)}</b><br>
+            🔤 ${esc(c.english)}<br>
+            📝 ${esc(c.chinese)}<br>
+            ${subIcon(c.extra.key)} ${esc(c.extra.topic)}
+          </div>
         </div>`;
     });
     if (cards) html += `<div class="day-grid">${cards}</div>`;
     app.innerHTML = html;
 
-    // 进度条动画
     requestAnimationFrame(() => {
       const bar = app.querySelector(".progress-bar > div");
       if (bar) setTimeout(() => { bar.style.width = bar.dataset.target; }, 100);
@@ -93,15 +114,20 @@
   }
 
   // ================================================================
-  // 学习页
+  // 学习页:知识点 + 对应题目,边学边练
   // ================================================================
   let dayStartTime = null;
+  let dayAnswers = {};   // key -> {correct, userAns, ...}
 
   function stepsBar(active) {
-    const steps = ["📖 学习", "✏️ 做题", "✅ 对答案", "🏆 成绩报告"];
+    const steps = ["📖 边学边练(每个知识点配一题)", "🏆 成绩报告"];
     return `<div class="steps">${steps.map((s, i) =>
       `<div class="step-pill ${i === active ? "active" : i < active ? "done" : ""}">${s}</div>`
     ).join("")}</div>`;
+  }
+
+  function countQuestions(data) {
+    return data.sections.reduce((n, s) => n + s.units.length, 0);
   }
 
   function renderDay(day) {
@@ -109,35 +135,42 @@
     const data = window.DAYS[day];
     if (!data) return renderHome();
     dayStartTime = Date.now();
+    dayAnswers = {};
+    const totalQ = countQuestions(data);
 
     let html = `
       <div class="day-header">
         <h1>${esc(data.title)}</h1>
-        <div class="meta">⏱️ ${esc(data.estimate)} · 建议中途休息,每 40 分钟起来活动一下 🤸</div>
+        <div class="meta">⏱️ ${esc(data.estimate)} · 学完一个知识点马上做对应的题,做完立刻看讲解 ✅</div>
       </div>
       ${stepsBar(0)}`;
 
-    data.sections.forEach(sec => {
+    data.sections.forEach((sec, si) => {
       html += `<div class="section-card ${sec.subject}">
-        <h2>${sec.icon} ${esc(sec.title)} <span class="tag ${sec.subject}">${sec.subject === "math" ? "数学" : "英语"}</span></h2>
-        <div class="section-meta">预计用时 ${sec.minutes} 分钟</div>
-        ${sec.blocks.map(renderBlock).join("")}
-      </div>`;
+        <h2>${sec.icon} ${esc(sec.title)} <span class="tag ${sec.subject}">${subLabel(sec.subject)}</span></h2>
+        <div class="section-meta">预计用时 ${sec.minutes} 分钟 · ${sec.units.length} 个知识点 ${sec.units.length} 道题</div>`;
+      sec.units.forEach((u, ui) => {
+        const key = si + "-" + ui;
+        html += `<div class="unit">
+          <div class="unit-name">📍 ${esc(u.name)}</div>
+          ${u.blocks.map(renderBlock).join("")}
+          ${renderInlineQuestion(u.q, key, sec.subject)}
+        </div>`;
+      });
+      html += `</div>`;
     });
 
     html += `
-      <div class="bottom-nav">
-        <button class="btn btn-outline" id="btn-back">🏠 返回首页</button>
-        <button class="btn btn-primary btn-big" id="btn-to-quiz">学完啦,开始做题 ✏️</button>
+      <div class="quiz-sticky">
+        <div class="finish-bar">
+          <span id="progress-chip" class="progress-chip">已完成 0 / ${totalQ} 题</span>
+          <button class="btn btn-success btn-big" id="btn-finish">全部完成,查看成绩 🏆</button>
+        </div>
       </div>`;
     app.innerHTML = html;
 
     bindWidgets();
-    document.getElementById("btn-back").onclick = renderHome;
-    document.getElementById("btn-to-quiz").onclick = () => {
-      if (!confirm("确认已经认真学完全部内容了吗?\n做题时不要翻回来看笔记哦!")) return;
-      renderQuiz(day);
-    };
+    bindInlineQuestions(day, data, totalQ);
   }
 
   // ---------- 学习内容块渲染 ----------
@@ -216,20 +249,412 @@
     }
   }
 
+  // ---------- 内嵌题目 ----------
+  function renderInlineQuestion(q, key, subject) {
+    let inner;
+    if (q.type === "choice") {
+      inner = `<div class="options">${q.options.map((opt, oi) => `
+        <div class="option" data-oi="${oi}">
+          <span class="opt-letter">${"ABCD"[oi]}</span><span>${esc(opt)}</span>
+        </div>`).join("")}</div>`;
+    } else {
+      inner = `<input class="fill-input" type="text" placeholder="在这里输入答案…" autocomplete="off">`;
+    }
+    return `<div class="quiz-question inline-q" data-key="${key}" data-subject="${subject}">
+      <div class="q-head">
+        <span class="q-num">✏️</span>
+        <span class="q-text">随堂练:${q.q}</span>
+        <span class="q-points">${q.points}分</span>
+      </div>
+      ${inner}
+      <div class="q-submit-row"><button class="btn btn-primary q-submit">提交本题</button></div>
+      <div class="q-feedback"></div>
+    </div>`;
+  }
+
+  function bindInlineQuestions(day, data, totalQ) {
+    // 建立 key -> 题目数据 的映射
+    const qMap = {};
+    data.sections.forEach((sec, si) => {
+      sec.units.forEach((u, ui) => { qMap[si + "-" + ui] = { q: u.q, unitName: u.name, subject: sec.subject }; });
+    });
+
+    app.querySelectorAll(".inline-q").forEach(qEl => {
+      const key = qEl.dataset.key;
+      const info = qMap[key];
+      const q = info.q;
+
+      // 选项选择
+      qEl.querySelectorAll(".option").forEach(opt => {
+        opt.addEventListener("click", () => {
+          if (qEl.classList.contains("locked")) return;
+          qEl.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
+          opt.classList.add("selected");
+        });
+      });
+
+      // 提交本题:立即判分 + 讲解
+      qEl.querySelector(".q-submit").addEventListener("click", () => {
+        if (qEl.classList.contains("locked")) return;
+        let userAns, correct;
+        if (q.type === "choice") {
+          const sel = qEl.querySelector(".option.selected");
+          if (!sel) { alert("先选一个答案再提交哦!"); return; }
+          const oi = parseInt(sel.dataset.oi, 10);
+          userAns = "ABCD"[oi] + ". " + q.options[oi];
+          correct = oi === q.answer;
+          qEl.querySelectorAll(".option").forEach((o, i) => {
+            if (i === q.answer) o.classList.add("right-ans");
+            else if (o.classList.contains("selected") && !correct) o.classList.add("wrong-pick");
+          });
+        } else {
+          const val = qEl.querySelector(".fill-input").value.trim();
+          if (!val) { alert("先填写答案再提交哦!"); return; }
+          userAns = val;
+          correct = q.accept.some(a => normalize(a) === normalize(val));
+          qEl.querySelector(".fill-input").disabled = true;
+        }
+
+        qEl.classList.add("locked", correct ? "correct" : "wrong");
+        qEl.querySelector(".q-submit-row").style.display = "none";
+        qEl.querySelector(".q-feedback").innerHTML = `
+          <div class="q-result ${correct ? "ok" : "no"}">
+            ${correct ? `🎉 回答正确!+${q.points} 分` : `❌ 回答错误。正确答案:<b>${esc(q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0])}</b>`}
+            <div class="explain">💡 ${esc(q.explain)}</div>
+          </div>`;
+
+        dayAnswers[key] = {
+          subject: info.subject, unitName: info.unitName, q: q.q, points: q.points,
+          correct: correct, userAns: userAns,
+          rightAns: q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0],
+          explain: q.explain
+        };
+        const done = Object.keys(dayAnswers).length;
+        document.getElementById("progress-chip").textContent = `已完成 ${done} / ${totalQ} 题`;
+      });
+    });
+
+    document.getElementById("btn-finish").addEventListener("click", () => {
+      const done = Object.keys(dayAnswers).length;
+      if (done < totalQ && !confirm(`还有 ${totalQ - done} 道题没做,未做的题记 0 分。\n确定要结束今天的学习吗?`)) return;
+      finishDay(day, data);
+    });
+  }
+
+  // ================================================================
+  // 统计成绩
+  // ================================================================
+  function finishDay(day, data) {
+    let score = 0, total = 0;
+    const detail = [];
+    const subjectStats = {};
+
+    data.sections.forEach((sec, si) => {
+      sec.units.forEach((u, ui) => {
+        const key = si + "-" + ui;
+        const rec = dayAnswers[key] || {
+          subject: sec.subject, unitName: u.name, q: u.q.q, points: u.q.points,
+          correct: false, userAns: "(未作答)",
+          rightAns: u.q.type === "choice" ? "ABCD"[u.q.answer] + ". " + u.q.options[u.q.answer] : u.q.accept[0],
+          explain: u.q.explain
+        };
+        detail.push(rec);
+        total += rec.points;
+        if (rec.correct) score += rec.points;
+        if (!subjectStats[rec.subject]) subjectStats[rec.subject] = { got: 0, total: 0, wrong: 0, count: 0 };
+        const st = subjectStats[rec.subject];
+        st.total += rec.points; st.count += 1;
+        if (rec.correct) st.got += rec.points; else st.wrong += 1;
+      });
+    });
+
+    const result = {
+      day: day, score: score, total: total,
+      subjects: subjectStats, detail: detail,
+      duration: Date.now() - dayStartTime,
+      finishedAt: new Date().toLocaleString("zh-CN")
+    };
+    setResult(day, result);
+    renderScore(day, result);
+  }
+
+  // ================================================================
+  // 成绩报告页
+  // ================================================================
+  function scoreComment(pct) {
+    if (pct >= 90) return { stars: 5, title: "太棒了,学霸预定!", comment: "继续保持这个状态,开学你就是最亮的星 ⭐" };
+    if (pct >= 80) return { stars: 4, title: "很不错,继续加油!", comment: "把错题弄懂,你离满分只差一点点!" };
+    if (pct >= 70) return { stars: 3, title: "合格啦,还有进步空间", comment: "建议把错题记到错题本上,明天再看一遍。" };
+    if (pct >= 60) return { stars: 2, title: "刚刚及格,要加把劲哦", comment: "今天的知识点建议再学一遍,基础很重要!" };
+    return { stars: 1, title: "别灰心,万事开头难", comment: "回到学习页重新看一遍,把错题弄懂,你一定可以的!💪" };
+  }
+
+  function renderScore(day, result) {
+    window.scrollTo(0, 0);
+    const pct = Math.round(result.score / result.total * 100);
+    const c = scoreComment(pct);
+    const R = 70, CIRC = 2 * Math.PI * R;
+
+    const subCards = Object.keys(result.subjects).map(key => {
+      const st = result.subjects[key];
+      return `<div class="sub-card ${key}">
+        <div class="sub-name">${subIcon(key)} ${subLabel(key)}</div>
+        <div class="sub-score">${st.got}<small style="font-size:14px;color:var(--text-light)"> / ${st.total}</small></div>
+        <div class="sub-name">${st.wrong === 0 ? "全对 🎉" : "错 " + st.wrong + " 题"}</div>
+      </div>`;
+    }).join("");
+
+    // 全部题目对错列表
+    const rows = result.detail.map((d, i) => `
+      <div class="q-row ${d.correct ? "ok" : "no"}">
+        <span class="q-row-mark">${d.correct ? "✓" : "✗"}</span>
+        <span class="tag ${d.subject}">${subLabel(d.subject)}</span>
+        <div class="q-row-body">
+          <div class="q-row-text">${i + 1}. ${esc(d.q)}</div>
+          ${d.correct ? "" : `<div class="q-row-detail">你的答案:${esc(d.userAns)} → 正确答案:<b>${esc(d.rightAns)}</b><br>💡 ${esc(d.explain)}</div>`}
+        </div>
+        <span class="q-row-pts">${d.correct ? "+" + d.points : "0"}分</span>
+      </div>`).join("");
+
+    app.innerHTML = `
+      ${stepsBar(1)}
+      <div class="score-hero">
+        <div class="score-ring">
+          <svg width="160" height="160">
+            <defs><linearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#5b6ef5"/><stop offset="100%" stop-color="#26b8a5"/>
+            </linearGradient></defs>
+            <circle class="ring-bg" cx="80" cy="80" r="${R}"/>
+            <circle class="ring-fg" cx="80" cy="80" r="${R}"
+              stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}" data-target="${CIRC * (1 - pct / 100)}"/>
+          </svg>
+          <div class="score-num"><b id="score-counter">0</b><span>/ ${result.total} 分</span></div>
+        </div>
+        <div class="stars">${"★".repeat(c.stars).split("").map(() => `<span class="star">⭐</span>`).join("")}</div>
+        <div class="score-title">${c.title}</div>
+        <div class="score-comment">${c.comment} · 用时约 ${fmtDuration(result.duration)}</div>
+        <div class="score-sub">${subCards}</div>
+        <div class="score-actions">
+          <button class="btn btn-success btn-big" id="btn-export">🖼️ 导出图片报告发给家长</button>
+          <button class="btn btn-outline" id="btn-go-home">🏠 返回首页</button>
+        </div>
+      </div>
+      <div class="section-card">
+        <h2>📋 全部题目对错一览(共 ${result.detail.length} 题)</h2>
+        <div class="section-meta">错题请认真看讲解,建议记到错题本上</div>
+        ${rows}
+      </div>`;
+
+    requestAnimationFrame(() => {
+      const ring = app.querySelector(".ring-fg");
+      setTimeout(() => { ring.style.strokeDashoffset = ring.dataset.target; }, 100);
+      const counter = document.getElementById("score-counter");
+      const start = performance.now();
+      (function tick(now) {
+        const p = Math.min((now - start) / 1400, 1);
+        counter.textContent = Math.round(result.score * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(tick);
+      })(start);
+    });
+
+    document.getElementById("btn-export").onclick = () => exportImage(day, result);
+    document.getElementById("btn-go-home").onclick = renderHome;
+  }
+
+  // ================================================================
+  // 导出图片报告(Canvas 绘制 → PNG 下载)
+  // ================================================================
+  function exportImage(day, result) {
+    let name = getName();
+    const input = prompt("请输入学生姓名(会显示在报告图片上):", name || "");
+    if (input === null) return;
+    name = input.trim() || "同学";
+    setName(name);
+
+    const cur = window.CURRICULUM[day - 1];
+    const pct = Math.round(result.score / result.total * 100);
+    const c = scoreComment(pct);
+    const subKeys = Object.keys(result.subjects);
+
+    // ---------- 尺寸参数 ----------
+    const W = 900, PAD = 48, LINE = 30;
+    const scale = 2; // 高清 2x
+
+    // 文本换行辅助
+    const measureCanvas = document.createElement("canvas");
+    const mctx = measureCanvas.getContext("2d");
+    function wrapText(text, font, maxWidth) {
+      mctx.font = font;
+      const chars = String(text).split("");
+      const lines = [];
+      let line = "";
+      chars.forEach(ch => {
+        if (mctx.measureText(line + ch).width > maxWidth) { lines.push(line); line = ch; }
+        else line += ch;
+      });
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    // ---------- 预计算高度 ----------
+    const qFont = "15px 'PingFang SC','Microsoft YaHei',sans-serif";
+    const dFont = "13px 'PingFang SC','Microsoft YaHei',sans-serif";
+    let qListHeight = 0;
+    const qRender = result.detail.map((d, i) => {
+      const qLines = wrapText(`${i + 1}. [${subLabel(d.subject)}] ${d.q}`, qFont, W - PAD * 2 - 90);
+      let dLines = [];
+      if (!d.correct) {
+        dLines = wrapText(`你的答案:${d.userAns} → 正确答案:${d.rightAns}`, dFont, W - PAD * 2 - 110);
+      }
+      const h = qLines.length * 24 + dLines.length * 20 + 18;
+      qListHeight += h;
+      return { d, qLines, dLines, h };
+    });
+
+    const headerH = 120, scoreH = 190, tableH = 46 * (subKeys.length + 1) + 30, signH = 100, footH = 50, listTitleH = 56;
+    const H = headerH + scoreH + tableH + listTitleH + qListHeight + signH + footH;
+
+    // ---------- 绘制 ----------
+    const canvas = document.createElement("canvas");
+    canvas.width = W * scale; canvas.height = H * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+
+    // 背景
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+
+    // 顶部渐变条
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0, "#5b6ef5"); grad.addColorStop(1, "#7c5bf5");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, 86);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 26px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText("🚀 暑假冲刺营 · 每日学习报告", PAD, 52);
+
+    // 学生信息
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "15px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText(`学生:${name} · 第 ${day} 天 · 完成时间:${result.finishedAt} · 用时约 ${fmtDuration(result.duration)}`, PAD, headerH - 6);
+
+    // 大分数
+    let y = headerH + 62;
+    ctx.fillStyle = "#5b6ef5";
+    ctx.font = "bold 64px 'PingFang SC','Microsoft YaHei',sans-serif";
+    const scoreText = String(result.score);
+    ctx.fillText(scoreText, PAD, y);
+    const sw = ctx.measureText(scoreText).width;
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "20px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText(` / ${result.total} 分`, PAD + sw + 6, y);
+    // 星星和评语
+    ctx.font = "28px sans-serif";
+    ctx.fillText("⭐".repeat(c.stars), PAD, y + 44);
+    ctx.fillStyle = "#2b2d42";
+    ctx.font = "bold 19px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText(c.title + " " + c.comment, PAD + c.stars * 34 + 16, y + 40);
+
+    // 分科表格
+    y = headerH + scoreH;
+    const colX = [PAD, PAD + 130, PAD + 470, PAD + 610, W - PAD];
+    ctx.fillStyle = "#eef0ff";
+    ctx.fillRect(PAD, y, W - PAD * 2, 46);
+    ctx.fillStyle = "#2b2d42";
+    ctx.font = "bold 15px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText("科目", colX[0] + 14, y + 29);
+    ctx.fillText("今日内容", colX[1] + 14, y + 29);
+    ctx.fillText("得分", colX[2] + 14, y + 29);
+    ctx.fillText("错题", colX[3] + 14, y + 29);
+    const topicMap = { math: cur.math, english: cur.english, chinese: cur.chinese };
+    subKeys.forEach((key, i) => {
+      const st = result.subjects[key];
+      const ry = y + 46 * (i + 1);
+      ctx.strokeStyle = "#e5e8f5"; ctx.strokeRect(PAD, ry, W - PAD * 2, 46);
+      ctx.fillStyle = "#2b2d42";
+      ctx.font = "15px 'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.fillText(`${subIcon(key)} ${subLabel(key)}`, colX[0] + 14, ry + 29);
+      let topic = topicMap[key] || cur.extra.topic;
+      if (topic.length > 22) topic = topic.slice(0, 21) + "…";
+      ctx.fillText(topic, colX[1] + 14, ry + 29);
+      ctx.font = "bold 15px 'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.fillStyle = st.wrong === 0 ? "#34c759" : "#2b2d42";
+      ctx.fillText(`${st.got} / ${st.total}`, colX[2] + 14, ry + 29);
+      ctx.fillStyle = st.wrong === 0 ? "#34c759" : "#ff5252";
+      ctx.fillText(st.wrong === 0 ? "全对" : `${st.wrong} / ${st.count}`, colX[3] + 14, ry + 29);
+    });
+
+    // 题目列表标题
+    y += tableH + 8;
+    ctx.fillStyle = "#2b2d42";
+    ctx.font = "bold 18px 'PingFang SC','Microsoft YaHei',sans-serif";
+    const wrongTotal = result.detail.filter(d => !d.correct).length;
+    ctx.fillText(`📋 全部题目对错一览(共 ${result.detail.length} 题,错 ${wrongTotal} 题)`, PAD, y + 24);
+    y += listTitleH;
+
+    // 逐题
+    qRender.forEach(({ d, qLines, dLines }) => {
+      // 对错标记
+      ctx.font = "bold 17px sans-serif";
+      ctx.fillStyle = d.correct ? "#34c759" : "#ff5252";
+      ctx.fillText(d.correct ? "✓" : "✗", PAD, y + 20);
+      // 题干
+      ctx.font = qFont;
+      ctx.fillStyle = "#2b2d42";
+      qLines.forEach((ln, li) => ctx.fillText(ln, PAD + 30, y + 20 + li * 24));
+      // 得分
+      ctx.font = "bold 14px 'PingFang SC','Microsoft YaHei',sans-serif";
+      ctx.fillStyle = d.correct ? "#34c759" : "#ff5252";
+      ctx.textAlign = "right";
+      ctx.fillText(d.correct ? `+${d.points}分` : "0分", W - PAD, y + 20);
+      ctx.textAlign = "left";
+      let yy = y + 20 + qLines.length * 24 - 4;
+      // 错题详情
+      if (!d.correct) {
+        ctx.font = dFont;
+        ctx.fillStyle = "#c0392b";
+        dLines.forEach((ln, li) => ctx.fillText(ln, PAD + 30, yy + li * 20));
+        yy += dLines.length * 20;
+      }
+      y += qLines.length * 24 + dLines.length * 20 + 18;
+      ctx.strokeStyle = "#f0f1f8";
+      ctx.beginPath(); ctx.moveTo(PAD, y - 10); ctx.lineTo(W - PAD, y - 10); ctx.stroke();
+    });
+
+    // 签名
+    y += 20;
+    ctx.fillStyle = "#6b7280";
+    ctx.font = "15px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.fillText("家长签名:____________________", PAD, y + 24);
+    ctx.fillText("日期:____________________", W - PAD - 260, y + 24);
+
+    // 页脚
+    ctx.fillStyle = "#9aa0b5";
+    ctx.font = "12px 'PingFang SC','Microsoft YaHei',sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("本报告由「暑假冲刺营」自动生成 · 每天进步一点点", W / 2, H - 22);
+    ctx.textAlign = "left";
+
+    // 下载
+    canvas.toBlob(blob => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `学习报告_${name}_第${day}天_${result.score}分.png`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      alert("图片报告已下载!🖼️\n\n在下载文件夹找到这张 PNG 图片,微信直接发给家长即可。");
+    }, "image/png");
+  }
+
   // ---------- 交互组件绑定 ----------
   function bindWidgets() {
-    // 例题展开
     app.querySelectorAll(".reveal-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         btn.nextElementSibling.classList.add("show");
         btn.style.display = "none";
       });
     });
-    // 单词卡翻面
     app.querySelectorAll(".vocab-card").forEach(card => {
       card.addEventListener("click", () => card.classList.toggle("flipped"));
     });
-    // 数轴
     app.querySelectorAll('[data-widget="numberline"]').forEach(w => {
       let pos = 0;
       const dot = w.querySelector(".nl-dot");
@@ -245,7 +670,6 @@
         });
       });
     });
-    // 温度计
     app.querySelectorAll('[data-widget="thermo"]').forEach(w => {
       const fill = w.querySelector(".thermo-fill");
       const tempEl = w.querySelector(".thermo-temp");
@@ -262,293 +686,6 @@
         });
       });
     });
-  }
-
-  // ================================================================
-  // 做题页
-  // ================================================================
-  function renderQuiz(day) {
-    window.scrollTo(0, 0);
-    const data = window.DAYS[day];
-    const total = data.quiz.reduce((s, q) => s + q.points, 0);
-
-    let html = `
-      <div class="day-header">
-        <h1>✏️ ${esc(data.title)} · 随堂检测</h1>
-        <div class="meta">共 ${data.quiz.length} 题,满分 ${total} 分 · 独立完成,不要回头看笔记哦!</div>
-      </div>
-      ${stepsBar(1)}`;
-
-    data.quiz.forEach((q, i) => {
-      html += `<div class="quiz-question" data-qi="${i}">
-        <div class="q-head">
-          <span class="q-num">${i + 1}</span>
-          <span class="q-text"><span class="tag ${q.subject}">${q.subject === "math" ? "数学" : "英语"}</span> ${q.q}</span>
-          <span class="q-points">${q.points}分</span>
-        </div>`;
-      if (q.type === "choice") {
-        html += `<div class="options">${q.options.map((opt, oi) => `
-          <div class="option" data-oi="${oi}">
-            <span class="opt-letter">${"ABCD"[oi]}</span><span>${esc(opt)}</span>
-          </div>`).join("")}</div>`;
-      } else {
-        html += `<input class="fill-input" type="text" placeholder="在这里输入答案…" autocomplete="off">`;
-      }
-      html += `</div>`;
-    });
-
-    html += `
-      <div class="quiz-sticky">
-        <button class="btn btn-success btn-big" id="btn-submit">📤 交卷,看看我得多少分!</button>
-      </div>`;
-    app.innerHTML = html;
-
-    // 选项点击
-    app.querySelectorAll(".quiz-question .option").forEach(opt => {
-      opt.addEventListener("click", () => {
-        opt.closest(".options").querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
-        opt.classList.add("selected");
-      });
-    });
-
-    document.getElementById("btn-submit").onclick = () => {
-      // 收集答案
-      const answers = data.quiz.map((q, i) => {
-        const qEl = app.querySelector(`.quiz-question[data-qi="${i}"]`);
-        if (q.type === "choice") {
-          const sel = qEl.querySelector(".option.selected");
-          return sel ? parseInt(sel.dataset.oi, 10) : null;
-        }
-        return qEl.querySelector(".fill-input").value.trim();
-      });
-      const blank = answers.filter(a => a === null || a === "").length;
-      if (blank > 0 && !confirm(`还有 ${blank} 道题没做,确定要交卷吗?`)) return;
-      gradeQuiz(day, answers);
-    };
-  }
-
-  // ================================================================
-  // 对答案 & 打分
-  // ================================================================
-  function normalize(s) {
-    return String(s).toLowerCase().replace(/\s+/g, " ").trim()
-      .replace(/[’']/g, "'").replace(/[−–]/g, "-");
-  }
-
-  function gradeQuiz(day, answers) {
-    const data = window.DAYS[day];
-    let score = 0;
-    const detail = data.quiz.map((q, i) => {
-      let correct = false;
-      if (q.type === "choice") {
-        correct = answers[i] === q.answer;
-      } else {
-        const user = normalize(answers[i] || "");
-        correct = q.accept.some(a => normalize(a) === user);
-      }
-      if (correct) score += q.points;
-      return {
-        subject: q.subject, q: q.q, points: q.points, correct: correct,
-        userAns: q.type === "choice"
-          ? (answers[i] === null ? "(未作答)" : "ABCD"[answers[i]] + ". " + q.options[answers[i]])
-          : (answers[i] || "(未作答)"),
-        rightAns: q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0],
-        explain: q.explain
-      };
-    });
-
-    const total = data.quiz.reduce((s, q) => s + q.points, 0);
-    const subScores = {};
-    ["math", "english"].forEach(sub => {
-      const qs = detail.filter(d => d.subject === sub);
-      subScores[sub] = {
-        got: qs.filter(d => d.correct).reduce((s, d) => s + d.points, 0),
-        total: qs.reduce((s, d) => s + d.points, 0),
-        wrong: qs.filter(d => !d.correct).length,
-        count: qs.length
-      };
-    });
-
-    const result = {
-      day: day, score: score, total: total,
-      subScores: subScores, detail: detail,
-      duration: Date.now() - dayStartTime,
-      finishedAt: new Date().toLocaleString("zh-CN")
-    };
-    setResult(day, result);
-    renderReview(day, result);
-  }
-
-  // ---------- 对答案页 ----------
-  function renderReview(day, result) {
-    window.scrollTo(0, 0);
-    const data = window.DAYS[day];
-    let html = `
-      <div class="day-header">
-        <h1>✅ 对答案 · 逐题讲解</h1>
-        <div class="meta">得分 ${result.score} / ${result.total} · 认真看每道错题的讲解,弄懂了再往下走!</div>
-      </div>
-      ${stepsBar(2)}`;
-
-    result.detail.forEach((d, i) => {
-      html += `<div class="quiz-question ${d.correct ? "correct" : "wrong"}">
-        <div class="q-head">
-          <span class="q-num" style="background:${d.correct ? "var(--success)" : "var(--danger)"}">${i + 1}</span>
-          <span class="q-text"><span class="tag ${d.subject}">${d.subject === "math" ? "数学" : "英语"}</span> ${d.q}</span>
-          <span class="q-points">${d.correct ? "+" + d.points : "0"}分</span>
-        </div>
-        <div class="q-result ${d.correct ? "ok" : "no"}">
-          ${d.correct ? "🎉 回答正确!" : `❌ 回答错误。你的答案:<b>${esc(d.userAns)}</b> · 正确答案:<b>${esc(d.rightAns)}</b>`}
-          <div class="explain">💡 ${esc(d.explain)}</div>
-        </div>
-      </div>`;
-    });
-
-    html += `
-      <div class="bottom-nav">
-        <button class="btn btn-primary btn-big" id="btn-to-score">看成绩报告 🏆</button>
-      </div>`;
-    app.innerHTML = html;
-    document.getElementById("btn-to-score").onclick = () => renderScore(day, result);
-  }
-
-  // ---------- 成绩报告页 ----------
-  function scoreComment(pct) {
-    if (pct >= 90) return { stars: 5, title: "太棒了,学霸预定!", comment: "继续保持这个状态,开学你就是最亮的星 ⭐" };
-    if (pct >= 80) return { stars: 4, title: "很不错,继续加油!", comment: "把错题弄懂,你离满分只差一点点!" };
-    if (pct >= 70) return { stars: 3, title: "合格啦,还有进步空间", comment: "建议把错题记到错题本上,明天再看一遍。" };
-    if (pct >= 60) return { stars: 2, title: "刚刚及格,要加把劲哦", comment: "今天的知识点建议再学一遍,基础很重要!" };
-    return { stars: 1, title: "别灰心,万事开头难", comment: "回到学习页重新看一遍,把错题弄懂,你一定可以的!💪" };
-  }
-
-  function renderScore(day, result) {
-    window.scrollTo(0, 0);
-    const pct = Math.round(result.score / result.total * 100);
-    const c = scoreComment(pct);
-    const R = 70, CIRC = 2 * Math.PI * R;
-
-    app.innerHTML = `
-      ${stepsBar(3)}
-      <div class="score-hero">
-        <div class="score-ring">
-          <svg width="160" height="160">
-            <defs><linearGradient id="scoreGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#5b6ef5"/><stop offset="100%" stop-color="#26b8a5"/>
-            </linearGradient></defs>
-            <circle class="ring-bg" cx="80" cy="80" r="${R}"/>
-            <circle class="ring-fg" cx="80" cy="80" r="${R}"
-              stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}" data-target="${CIRC * (1 - pct / 100)}"/>
-          </svg>
-          <div class="score-num"><b id="score-counter">0</b><span>/ ${result.total} 分</span></div>
-        </div>
-        <div class="stars">${"★".repeat(c.stars).split("").map(s => `<span class="star">⭐</span>`).join("")}</div>
-        <div class="score-title">${c.title}</div>
-        <div class="score-comment">${c.comment}</div>
-        <div class="score-sub">
-          <div class="sub-card math">
-            <div class="sub-name">🔢 数学</div>
-            <div class="sub-score">${result.subScores.math.got}<small style="font-size:14px;color:var(--text-light)"> / ${result.subScores.math.total}</small></div>
-            <div class="sub-name">错 ${result.subScores.math.wrong} 题</div>
-          </div>
-          <div class="sub-card english">
-            <div class="sub-name">🔤 英语</div>
-            <div class="sub-score">${result.subScores.english.got}<small style="font-size:14px;color:var(--text-light)"> / ${result.subScores.english.total}</small></div>
-            <div class="sub-name">错 ${result.subScores.english.wrong} 题</div>
-          </div>
-        </div>
-        <div class="score-actions">
-          <button class="btn btn-success btn-big" id="btn-export">📤 导出报告发给家长</button>
-          <button class="btn btn-outline" id="btn-review-again">🔍 再看一遍错题</button>
-          <button class="btn btn-outline" id="btn-go-home">🏠 返回首页</button>
-        </div>
-      </div>`;
-
-    // 动画:圆环 + 数字滚动
-    requestAnimationFrame(() => {
-      const ring = app.querySelector(".ring-fg");
-      setTimeout(() => { ring.style.strokeDashoffset = ring.dataset.target; }, 100);
-      const counter = document.getElementById("score-counter");
-      const start = performance.now();
-      (function tick(now) {
-        const p = Math.min((now - start) / 1400, 1);
-        counter.textContent = Math.round(result.score * (1 - Math.pow(1 - p, 3)));
-        if (p < 1) requestAnimationFrame(tick);
-      })(start);
-    });
-
-    document.getElementById("btn-export").onclick = () => exportReport(day, result);
-    document.getElementById("btn-review-again").onclick = () => renderReview(day, result);
-    document.getElementById("btn-go-home").onclick = renderHome;
-  }
-
-  // ================================================================
-  // 导出家长报告
-  // ================================================================
-  function exportReport(day, result) {
-    let name = getName();
-    const input = prompt("请输入学生姓名(会显示在报告上):", name || "");
-    if (input === null) return;
-    name = input.trim() || "同学";
-    setName(name);
-
-    const cur = window.CURRICULUM[day - 1];
-    const pct = Math.round(result.score / result.total * 100);
-    const c = scoreComment(pct);
-    const wrongList = result.detail.filter(d => !d.correct);
-
-    const reportHtml = `<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(name)} · 第${day}天学习报告</title>
-<style>
-  body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:#f7f8fc;color:#2b2d42;line-height:1.7;margin:0;padding:20px}
-  .report{max-width:680px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 4px 20px rgba(60,70,130,.1)}
-  h1{font-size:22px;text-align:center;margin:0 0 4px}
-  .sub{text-align:center;color:#6b7280;font-size:13px;margin-bottom:20px}
-  .big-score{text-align:center;font-size:52px;font-weight:800;color:#5b6ef5;margin:10px 0 0}
-  .stars{text-align:center;font-size:24px;letter-spacing:4px}
-  .comment{text-align:center;color:#6b7280;margin-bottom:20px}
-  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
-  th,td{border:1px solid #e5e8f5;padding:8px 12px;text-align:center}
-  th{background:#eef0ff}
-  .wrong-item{background:#fff7f7;border-left:4px solid #ff5252;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:14px}
-  .wrong-item .ex{color:#6b7280;font-size:13px;margin-top:4px}
-  .sign{margin-top:32px;display:flex;justify-content:space-between;color:#6b7280;font-size:14px}
-  .footer{text-align:center;color:#9aa0b5;font-size:12px;margin-top:24px}
-  @media print{body{background:#fff;padding:0}.report{box-shadow:none}}
-</style></head><body>
-<div class="report">
-  <h1>🚀 暑假冲刺营 · 每日学习报告</h1>
-  <div class="sub">学生:${esc(name)} · 第 ${day} 天 · 完成时间:${esc(result.finishedAt)}</div>
-  <div class="big-score">${result.score}<span style="font-size:20px;color:#6b7280"> / ${result.total} 分</span></div>
-  <div class="stars">${"⭐".repeat(c.stars)}</div>
-  <div class="comment">${c.title} ${c.comment}</div>
-  <table>
-    <tr><th>科目</th><th>今日内容</th><th>得分</th><th>错题数</th></tr>
-    <tr><td>🔢 数学</td><td>${esc(cur.math)}</td><td><b>${result.subScores.math.got}</b> / ${result.subScores.math.total}</td><td>${result.subScores.math.wrong} / ${result.subScores.math.count}</td></tr>
-    <tr><td>🔤 英语</td><td>${esc(cur.english)}</td><td><b>${result.subScores.english.got}</b> / ${result.subScores.english.total}</td><td>${result.subScores.english.wrong} / ${result.subScores.english.count}</td></tr>
-  </table>
-  <p>⏱️ 本次学习+做题用时:约 ${fmtDuration(result.duration)}</p>
-  ${wrongList.length === 0
-    ? `<p style="color:#34c759;font-weight:700">🎉 全部答对,零错题!请家长给孩子一个大大的鼓励!</p>`
-    : `<h3 style="font-size:16px">❌ 错题清单(共 ${wrongList.length} 题,建议家长陪孩子再过一遍)</h3>` +
-      wrongList.map(d => `<div class="wrong-item">
-        <b>[${d.subject === "math" ? "数学" : "英语"}]</b> ${d.q}<br>
-        孩子的答案:${esc(d.userAns)} → 正确答案:<b>${esc(d.rightAns)}</b>
-        <div class="ex">💡 ${esc(d.explain)}</div>
-      </div>`).join("")}
-  <div class="sign"><span>家长签名:________________</span><span>日期:________________</span></div>
-  <div class="footer">本报告由「暑假冲刺营」自动生成 · 建议打印或转发给老师留存</div>
-</div>
-</body></html>`;
-
-    const blob = new Blob([reportHtml], { type: "text/html;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `学习报告_${name}_第${day}天_${result.score}分.html`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    alert("报告已下载!📤\n\n发送方法:在下载文件夹里找到这个 HTML 文件,通过微信/邮件发给家长,家长用浏览器打开即可查看,也可以直接打印。");
   }
 
   // ================================================================

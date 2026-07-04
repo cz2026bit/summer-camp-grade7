@@ -7,6 +7,16 @@
   --math-light: #fff3e9;
   --english: #26b8a5;
   --english-light: #e7f8f5;
+  --chinese: #ef5b7b;
+  --chinese-light: #fdeef2;
+  --history: #b0813d;
+  --history-light: #f7f0e3;
+  --geography: #3b82f6;
+  --geography-light: #e8f0fe;
+  --biology: #22a55e;
+  --biology-light: #e6f7ee;
+  --civics: #8b5cf6;
+  --civics-light: #f1ecfe;
   --success: #34c759;
   --danger: #ff5252;
   --bg: #f7f8fc;
@@ -132,11 +142,21 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 }
 .section-card.math { border-top-color: var(--math); }
 .section-card.english { border-top-color: var(--english); }
+.section-card.chinese { border-top-color: var(--chinese); }
+.section-card.history { border-top-color: var(--history); }
+.section-card.geography { border-top-color: var(--geography); }
+.section-card.biology { border-top-color: var(--biology); }
+.section-card.civics { border-top-color: var(--civics); }
 .section-card h2 { font-size: 19px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
 .section-card .section-meta { font-size: 13px; color: var(--text-light); margin-bottom: 16px; }
 .tag { font-size: 12px; padding: 2px 12px; border-radius: 999px; font-weight: 600; }
 .tag.math { background: var(--math-light); color: var(--math); }
 .tag.english { background: var(--english-light); color: var(--english); }
+.tag.chinese { background: var(--chinese-light); color: var(--chinese); }
+.tag.history { background: var(--history-light); color: var(--history); }
+.tag.geography { background: var(--geography-light); color: var(--geography); }
+.tag.biology { background: var(--biology-light); color: var(--biology); }
+.tag.civics { background: var(--civics-light); color: var(--civics); }
 
 .block-text { margin: 14px 0; font-size: 15px; }
 .block-text .hl { background: linear-gradient(transparent 60%, #ffe9a8 60%); font-weight: 600; padding: 0 2px; }
@@ -148,6 +168,11 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 }
 .section-card.math .rule-card { background: var(--math-light); border-left-color: var(--math); }
 .section-card.english .rule-card { background: var(--english-light); border-left-color: var(--english); }
+.section-card.chinese .rule-card { background: var(--chinese-light); border-left-color: var(--chinese); }
+.section-card.history .rule-card { background: var(--history-light); border-left-color: var(--history); }
+.section-card.geography .rule-card { background: var(--geography-light); border-left-color: var(--geography); }
+.section-card.biology .rule-card { background: var(--biology-light); border-left-color: var(--biology); }
+.section-card.civics .rule-card { background: var(--civics-light); border-left-color: var(--civics); }
 .rule-card h3 { font-size: 16px; margin-bottom: 6px; }
 .rule-card .formula {
   font-size: 17px; font-weight: 700; text-align: center; padding: 8px;
@@ -260,6 +285,62 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 .reading-passage p { margin: 8px 0; }
 .reading-tip { font-size: 13px; color: var(--text-light); }
 
+/* ===== 知识点单元 ===== */
+.unit {
+  border-top: 2px dashed #e5e8f5; margin-top: 24px; padding-top: 20px;
+}
+.unit:first-of-type { border-top: none; margin-top: 8px; padding-top: 0; }
+.unit-name {
+  font-size: 16px; font-weight: 700; margin-bottom: 8px;
+  display: inline-block; background: #f2f4fd; padding: 6px 16px; border-radius: 999px;
+}
+
+/* 内嵌随堂练 */
+.inline-q {
+  margin-top: 16px; border: 2px solid #e5e8f5;
+  box-shadow: none; background: #fbfcff;
+}
+.inline-q .q-num { background: var(--primary); font-size: 14px; }
+.inline-q.locked .option { cursor: default; }
+.inline-q.locked .option:hover { border-color: #e5e8f5; background: transparent; transform: none; }
+.inline-q.locked .option.right-ans:hover { border-color: var(--success); background: #eafaf0; }
+.inline-q.locked .option.wrong-pick:hover { border-color: var(--danger); background: #ffefef; }
+.q-submit-row { margin-top: 14px; }
+.q-submit { font-size: 14px; padding: 8px 26px; }
+.q-feedback .q-result { animation: fadeUp .35s ease both; }
+
+/* 底部完成栏 */
+.finish-bar {
+  display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(8px);
+  padding: 12px 20px; border-radius: 999px; box-shadow: 0 6px 24px rgba(60,70,130,.18);
+}
+.progress-chip {
+  font-size: 14px; font-weight: 700; color: var(--primary);
+  background: var(--primary-light); padding: 8px 18px; border-radius: 999px;
+}
+
+/* 成绩页题目一览 */
+.q-row {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 4px; border-bottom: 1px solid #f0f1f8; font-size: 14px;
+}
+.q-row:last-child { border-bottom: none; }
+.q-row-mark { font-weight: 800; font-size: 16px; min-width: 20px; }
+.q-row.ok .q-row-mark { color: var(--success); }
+.q-row.no .q-row-mark { color: var(--danger); }
+.q-row .tag { flex: none; margin-top: 1px; }
+.q-row-body { flex: 1; }
+.q-row-text { font-weight: 600; }
+.q-row-detail {
+  margin-top: 6px; font-size: 13px; color: #c0392b;
+  background: #fff7f7; border-left: 3px solid var(--danger);
+  padding: 8px 12px; border-radius: 8px; line-height: 1.6;
+}
+.q-row-pts { flex: none; font-weight: 700; font-size: 13px; }
+.q-row.ok .q-row-pts { color: var(--success); }
+.q-row.no .q-row-pts { color: var(--danger); }
+
 /* ===== 测验 ===== */
 .quiz-question {
   background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
@@ -337,6 +418,11 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 }
 .score-sub .sub-card.math { background: var(--math-light); }
 .score-sub .sub-card.english { background: var(--english-light); }
+.score-sub .sub-card.chinese { background: var(--chinese-light); }
+.score-sub .sub-card.history { background: var(--history-light); }
+.score-sub .sub-card.geography { background: var(--geography-light); }
+.score-sub .sub-card.biology { background: var(--biology-light); }
+.score-sub .sub-card.civics { background: var(--civics-light); }
 .score-sub .sub-name { font-size: 13px; color: var(--text-light); }
 .score-sub .sub-score { font-size: 26px; font-weight: 800; }
 .score-actions { margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
