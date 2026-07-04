@@ -196,6 +196,46 @@
         .then(m => { this.manifest = m; })
         .catch(() => {});
     },
+    // 共享播放器:在用户第一次点击时解锁,之后 iOS/安卓也能自动播放
+    player: null,
+    unlocked: false,
+    pendingRetry: null,
+    ensurePlayer() {
+      if (!this.player) {
+        this.player = new Audio();
+        this.player.preload = "auto";
+      }
+      return this.player;
+    },
+    unlock() {
+      if (this.unlocked) return;
+      this.unlocked = true;
+      try {
+        const p = this.ensurePlayer();
+        if (p.paused) {
+          p.muted = true;
+          p.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+          p.play().then(() => { p.pause(); p.muted = false; }).catch(() => { p.muted = false; });
+        }
+      } catch (e) {}
+      try { SFX.ac().resume(); } catch (e) {}
+    },
+    isPlaying() {
+      const a = this.player;
+      return (a && !a.paused && !a.ended && a.src && !a.muted) || (speechSynthesis.speaking && !speechSynthesis.paused);
+    },
+    isPaused() {
+      const a = this.player;
+      return (a && a.paused && !a.ended && a.currentTime > 0 && a.src.indexOf("data:") < 0) || speechSynthesis.paused;
+    },
+    pauseCurrent() {
+      try { if (this.player) this.player.pause(); } catch (e) {}
+      try { if (speechSynthesis.speaking) speechSynthesis.pause(); } catch (e) {}
+    },
+    resumeCurrent() {
+      try { if (this.player && this.player.paused && this.player.currentTime > 0) this.player.play().catch(() => {}); } catch (e) {}
+      try { if (speechSynthesis.paused) speechSynthesis.resume(); } catch (e) {}
+    },
     async speakPregen(clean, lang, token) {
       if (!this.manifest) return false;
       try {
@@ -204,14 +244,33 @@
         const h = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
         if (!this.manifest[h]) return false;
         if (token !== this.token) return true;
+        const self = this;
         return await new Promise(resolve => {
-          const audio = new Audio("audio/" + h + ".mp3");
-          audio.volume = Math.max(0.2, Math.min(1, this.prefs.volume || 1));
-          audio.playbackRate = this.prefs.rate || 1;
-          this.currentAudio = audio;
-          audio.onended = () => resolve(true);
-          audio.onerror = () => resolve(false);
-          audio.play().catch(() => resolve(false));
+          const audio = self.ensurePlayer();
+          try { audio.pause(); } catch (e) {}
+          const onEnd = () => { cleanup(); resolve(true); };
+          const onErr = () => { cleanup(); resolve(token !== self.token); };
+          function cleanup() {
+            audio.removeEventListener("ended", onEnd);
+            audio.removeEventListener("error", onErr);
+            audio.removeEventListener("tts-stop", onErr);
+          }
+          audio.addEventListener("ended", onEnd);
+          audio.addEventListener("error", onErr);
+          audio.addEventListener("tts-stop", onErr);
+          audio.muted = false;
+          audio.src = "audio/" + h + ".mp3";
+          audio.volume = Math.max(0.2, Math.min(1, self.prefs.volume || 1));
+          audio.playbackRate = self.prefs.rate || 1;
+          self.currentAudio = audio;
+          audio.play().catch(() => {
+            // 被浏览器自动播放策略拦截:显示"点我开声音",点击后从头播放本句
+            markAudioBlocked();
+            self.pendingRetry = () => {
+              self.unlocked = true;
+              audio.play().catch(() => { cleanup(); resolve(true); });
+            };
+          });
         });
       } catch (e) { return false; }
     },
@@ -393,12 +452,27 @@
     },
     stop() {
       this.token += 1;
+      this.pendingRetry = null;
       try { speechSynthesis.cancel(); } catch (e) {}
-      try { if (this.currentAudio) this.currentAudio.pause(); } catch (e) {}
+      try {
+        if (this.player) {
+          this.player.pause();
+          this.player.dispatchEvent(new Event("tts-stop")); // 让等待中的播放 Promise 立即返回
+        }
+        if (this.currentAudio && this.currentAudio !== this.player) this.currentAudio.pause();
+      } catch (e) {}
     }
   };
   TTS.init();
   TTS.loadManifest();
+  // 任意首次点击即解锁音频(应对 iOS/安卓自动播放限制)
+  document.addEventListener("pointerdown", () => TTS.unlock(), { capture: true });
+
+  // 语音被浏览器拦截时,把顶栏按钮变成醒目的"点我开声音"
+  function markAudioBlocked() {
+    const b = document.getElementById("btn-audio");
+    if (b) { b.classList.add("audio-blocked"); b.textContent = "🔇 点我开声音"; }
+  }
   function guessLang(text) {
     const ascii = (String(text).match(/[a-zA-Z]/g) || []).length;
     const han = (String(text).match(/[一-龥]/g) || []).length;
@@ -1164,6 +1238,7 @@
         <button class="btn btn-ghost-dark page-exit" id="btn-exit" title="退出本关">✕</button>
         <div class="page-progress"><div style="width:${pct}%"></div></div>
         <span class="page-count">${pageIdx + 1}/${total}</span>
+        <button class="btn btn-ghost-dark page-audio" id="btn-audio" title="暂停 / 播放本页语音">🔊</button>
         <span id="combo-chip" class="combo-chip" style="display:${combo >= 2 ? "" : "none"}">🔥 ×${combo}</span>
       </div>
       ${body}
@@ -1189,6 +1264,33 @@
     } else {
       bindQuestionPage(p);
     }
+
+    // 🔊 播放 / 暂停 / 重播本页语音
+    const audioBtn = document.getElementById("btn-audio");
+    const replayPageAudio = () => {
+      const lessonPlay = app.querySelector(".lesson-player .lesson-play");
+      if (p.type === "question") {
+        const v = app.querySelector(".q-voice");
+        if (v) { v.click(); return; }
+      }
+      if (lessonPlay && lessonPlay.style.display !== "none") { lessonPlay.click(); return; }
+      const t = pageAutoText(p);
+      if (t) { TTS.stop(); TTS.speak(t, guessLang(t)); }
+    };
+    audioBtn.onclick = () => {
+      TTS.unlock();
+      if (TTS.pendingRetry) {           // 之前被自动播放策略拦截 → 从被拦的那句继续
+        const retry = TTS.pendingRetry;
+        TTS.pendingRetry = null;
+        audioBtn.classList.remove("audio-blocked");
+        audioBtn.textContent = "🔊";
+        retry();
+        return;
+      }
+      if (TTS.isPlaying()) { TTS.pauseCurrent(); audioBtn.textContent = "▶ 继续"; }
+      else if (TTS.isPaused()) { TTS.resumeCurrent(); audioBtn.textContent = "🔊"; }
+      else { audioBtn.textContent = "🔊"; replayPageAudio(); }
+    };
 
     document.getElementById("btn-exit").onclick = () => {
       if (confirm("要退出本关吗?本关的答题进度不会保存哦。")) renderHome();
