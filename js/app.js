@@ -3,7 +3,8 @@
   const app = document.getElementById("app");
   const TOTAL_DAYS = 40;
   const STORE_KEY = "enen_camp_v3";
-  const SITE_NAME = "恩恩的小升初衔接暑期提升计划";
+  const VOICE_KEY = "enen_voice";
+  const SAVE_VERSION = 1;
 
   // ---------- 科目定义 ----------
   const SUBJECTS = {
@@ -33,15 +34,64 @@
   // ---------- 本地存储 ----------
   function loadStore() {
     try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
-    catch (e) { return {}; }  }
-  function saveStore(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+    catch (e) { return {}; }
+  }
+  function saveStore(s) {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(s));
+      return true;
+    } catch (e) {
+      alert("浏览器本地存储写入失败。可能是无痕模式、存储空间不足,或浏览器禁止了本地数据。");
+      return false;
+    }
+  }
   function getResult(day) { return loadStore()["day" + day] || null; }
   function getXP() { return loadStore().xp || 0; }
   function getBadges() { return loadStore().badges || []; }
   function levelOf(xp) { return Math.floor(Math.sqrt(xp / 60)) + 1; }
   function levelFloorXP(lv) { return (lv - 1) * (lv - 1) * 60; }
+  function downloadTextFile(filename, text, mime) {
+    const blob = new Blob([text], { type: mime || "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  function exportSaveData() {
+    const payload = {
+      app: "enen-middle-school-camp",
+      version: SAVE_VERSION,
+      exportedAt: new Date().toISOString(),
+      store: loadStore(),
+      voice: TTS.prefs || {}
+    };
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadTextFile(`恩恩学习存档_${stamp}.json`, JSON.stringify(payload, null, 2), "application/json");
+  }
+  function importSaveData(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const payload = JSON.parse(String(reader.result || ""));
+        const store = payload && payload.store;
+        if (!store || typeof store !== "object") throw new Error("bad save");
+        if (!confirm("导入存档会覆盖当前浏览器里的等级、打卡、徽章和关卡记录。确定导入吗?")) return;
+        if (!saveStore(store)) return;
+        if (payload.voice && typeof payload.voice === "object") {
+          TTS.prefs = payload.voice;
+          localStorage.setItem(VOICE_KEY, JSON.stringify(TTS.prefs));
+          TTS.init();
+        }
+        alert("学习存档已导入,等级、连续打卡和关卡记录已恢复。");
+        renderHome();
+      } catch (e) {
+        alert("这个文件不像是本项目导出的学习存档,导入失败。");
+      }
+    };
+    reader.readAsText(file);
+  }
 
-  // ---------- 顶栏游戏状态 ----------
   function refreshGameChip() {
     const xp = getXP();
     const el = document.getElementById("game-chip");
@@ -63,44 +113,162 @@
   }
 
   // ================================================================
-  // 语音引擎(TTS)
+  // 语音引擎(TTS)—— 自动挑选最自然的声音,支持用户自选
   // ================================================================
   const TTS = {
-    zhVoice: null, enVoice: null, ready: false,
+    voices: [], zhVoice: null, enVoice: null, token: 0,
+    prefs: (function () { try { return JSON.parse(localStorage.getItem(VOICE_KEY)) || {}; } catch (e) { return {}; } })(),
+    savePrefs() { localStorage.setItem(VOICE_KEY, JSON.stringify(this.prefs)); },
+    // 给声音打分:神经/自然/在线人声 > 高质量系统声 > 普通系统声
+    scoreZh(v) {
+      let s = 0;
+      if (/natural|neural|online/i.test(v.name)) s += 120;
+      if (/premium|enhanced/i.test(v.name)) s += 70;
+      if (/xiaoxiao|xiaoyi|xiaoxuan|yunjian|yunxi|晓晓|晓伊|晓萱/i.test(v.name)) s += 55;
+      if (/google/i.test(v.name)) s += 60;
+      if (/tingting|ting-ting|婷婷/i.test(v.name)) s += 30;
+      if (/siri/i.test(v.name)) s += 25;
+      if (/^zh(-|_)CN/i.test(v.lang)) s += 10; else if (/^zh/i.test(v.lang)) s += 5; else s -= 100;
+      return s;
+    },
+    scoreEn(v) {
+      let s = 0;
+      if (/natural|neural|online/i.test(v.name)) s += 120;
+      if (/premium|enhanced/i.test(v.name)) s += 70;
+      if (/aria|jenny|guy|ana|ava|andrew|emma|brian/i.test(v.name)) s += 35;
+      if (/google us english/i.test(v.name)) s += 60;
+      if (/samantha/i.test(v.name)) s += 40;
+      if (/siri/i.test(v.name)) s += 25;
+      if (/^en(-|_)US/i.test(v.lang)) s += 10; else if (/^en/i.test(v.lang)) s += 5; else s -= 100;
+      return s;
+    },
     init() {
       const pick = () => {
-        const vs = speechSynthesis.getVoices();
-        if (!vs.length) return;
-        this.zhVoice = vs.find(v => /Tingting|婷婷/i.test(v.name)) || vs.find(v => v.lang.startsWith("zh-CN") || v.lang.startsWith("zh_CN")) || vs.find(v => v.lang.startsWith("zh"));
-        this.enVoice = vs.find(v => /Samantha/i.test(v.name)) || vs.find(v => v.lang.startsWith("en-US") || v.lang.startsWith("en_US")) || vs.find(v => v.lang.startsWith("en"));
-        this.ready = true;
+        this.voices = speechSynthesis.getVoices();
+        if (!this.voices.length) return;
+        const zhList = this.voices.filter(v => /^zh/i.test(v.lang)).sort((a, b) => this.scoreZh(b) - this.scoreZh(a));
+        const enList = this.voices.filter(v => /^en/i.test(v.lang)).sort((a, b) => this.scoreEn(b) - this.scoreEn(a));
+        this.zhVoice = (this.prefs.zh && this.voices.find(v => v.name === this.prefs.zh)) || zhList[0] || null;
+        this.enVoice = (this.prefs.en && this.voices.find(v => v.name === this.prefs.en)) || enList[0] || null;
       };
       pick();
       speechSynthesis.onvoiceschanged = pick;
     },
-    speak(text, lang) {
-      return new Promise(resolve => {
-        try {
-          const clean = String(text).replace(/[👉🤯💸🎯⚠️✅❌🔑🎵🕊️😴🌊🌌💭❤️‍🔥🧮⛰️🦷🔥🌾🏠🕳️🤔❓🌧️❄️📜😨⚖️🧭🚪📏💺🔍🎭🔗📍🗺️🕵️🀄📚🍲➕✖️➗🏗️🎶💯🎖️⚔️🚀1️⃣2️⃣🧩🏆❤️]/g, "");
-          const u = new SpeechSynthesisUtterance(clean);
-          const en = lang === "en";
-          u.voice = en ? this.enVoice : this.zhVoice;
-          u.lang = en ? "en-US" : "zh-CN";
-          u.rate = en ? 0.85 : 1.0;
-          u.onend = resolve;
-          u.onerror = resolve;
-          speechSynthesis.speak(u);
-        } catch (e) { resolve(); }
-      });
+    hasNatural() { return this.voices.some(v => /natural|neural|online/i.test(v.name)); },
+    qualityLabel(v) {
+      if (!v) return "未找到可用声音";
+      if (/natural|neural|online/i.test(v.name)) return "接近真人";
+      if (/premium|enhanced|google|samantha|tingting|婷婷/i.test(v.name)) return "较自然";
+      return "普通系统声音";
     },
-    stop() { try { speechSynthesis.cancel(); } catch (e) {} }
+    splitText(text) {
+      const clean = String(text)
+        .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{20E3}]/gu, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!clean) return [];
+      const parts = clean.match(/[^。！？!?；;：:,.，、]+[。！？!?；;：:,.，、]?/g) || [clean];
+      const chunks = [];
+      let cur = "";
+      parts.forEach(part => {
+        if ((cur + part).length > 80 && cur) { chunks.push(cur.trim()); cur = part; }
+        else cur += part;
+      });
+      if (cur.trim()) chunks.push(cur.trim());
+      return chunks;
+    },
+    pauseFor(chunk) {
+      if (/[。！？!?]/.test(chunk.slice(-1))) return 180;
+      if (/[；;：:]/.test(chunk.slice(-1))) return 120;
+      return 70;
+    },
+    speak(text, lang) {
+      this.token += 1;
+      const token = this.token;
+      const en = lang === "en";
+      const chunks = this.splitText(text);
+      const voice = en ? this.enVoice : this.zhVoice;
+      const rate = (this.prefs.rate || 1) * (en ? 0.86 : 0.94);
+      const pitch = en ? 1 : 1.04;
+      const volume = Math.max(0.2, Math.min(1, this.prefs.volume || 1));
+      try { speechSynthesis.cancel(); } catch (e) {}
+      return chunks.reduce((chain, chunk) => chain.then(() => {
+        if (token !== this.token) return Promise.resolve();
+        return new Promise(resolve => {
+          try {
+            const u = new SpeechSynthesisUtterance(chunk);
+            u.voice = voice;
+            u.lang = en ? "en-US" : "zh-CN";
+            u.rate = rate;
+            u.pitch = pitch;
+            u.volume = volume;
+            u.onend = () => setTimeout(resolve, this.pauseFor(chunk));
+            u.onerror = resolve;
+            speechSynthesis.speak(u);
+          } catch (e) { resolve(); }
+        });
+      }), Promise.resolve());
+    },
+    stop() { this.token += 1; try { speechSynthesis.cancel(); } catch (e) {} }
   };
   TTS.init();
-  // 猜测文本主要语言
   function guessLang(text) {
     const ascii = (String(text).match(/[a-zA-Z]/g) || []).length;
     const han = (String(text).match(/[一-龥]/g) || []).length;
     return ascii > han * 2 ? "en" : "zh";
+  }
+
+  // ---------- 语音设置面板 ----------
+  function showVoiceSettings() {
+    const zhList = TTS.voices.filter(v => /^zh/i.test(v.lang)).sort((a, b) => TTS.scoreZh(b) - TTS.scoreZh(a));
+    const enList = TTS.voices.filter(v => /^en/i.test(v.lang)).sort((a, b) => TTS.scoreEn(b) - TTS.scoreEn(a));
+    const options = (list, current) => list.length
+      ? list.map(v => `<option value="${esc(v.name)}" ${current && v.name === current.name ? "selected" : ""}>${esc(v.name)} · ${esc(v.lang)} · ${TTS.qualityLabel(v)}</option>`).join("")
+      : `<option value="">当前浏览器没有提供该语言声音</option>`;
+    const overlay = document.createElement("div");
+    overlay.className = "gate-overlay";
+    overlay.innerHTML = `
+      <div class="gate-card voice-card">
+        <div class="gate-icon">🎙️</div>
+        <h2>语音设置</h2>
+        <div class="voice-status">
+          中文:${esc(TTS.zhVoice ? TTS.zhVoice.name : "未找到")} · ${TTS.qualityLabel(TTS.zhVoice)}<br>
+          英文:${esc(TTS.enVoice ? TTS.enVoice.name : "未找到")} · ${TTS.qualityLabel(TTS.enVoice)}
+        </div>
+        <div class="vs-row"><label>中文声音</label>
+          <select id="vs-zh">${options(zhList, TTS.zhVoice)}</select>
+          <button class="mini-voice" id="vs-try-zh">🔊 试听</button></div>
+        <div class="vs-row"><label>英文声音</label>
+          <select id="vs-en">${options(enList, TTS.enVoice)}</select>
+          <button class="mini-voice" id="vs-try-en">🔊 试听</button></div>
+        <div class="vs-row"><label>语速</label>
+          <input type="range" id="vs-rate" min="0.7" max="1.3" step="0.05" value="${TTS.prefs.rate || 1}">
+          <span id="vs-rate-val">${TTS.prefs.rate || 1}x</span></div>
+        <div class="vs-row"><label>音量</label>
+          <input type="range" id="vs-volume" min="0.4" max="1" step="0.05" value="${TTS.prefs.volume || 1}">
+          <span id="vs-volume-val">${Math.round((TTS.prefs.volume || 1) * 100)}%</span></div>
+        <div class="vs-hint">浏览器语音不会把 API key 暴露到网页里,同一份代码可离线打开。想要更接近真人,优先用 Edge 的微软 Natural/Online 声音,或在系统里下载高质量中文声音。</div>
+        <div style="margin-top:18px">
+          <button class="btn btn-primary btn-big" id="vs-save">保存设置</button>
+          <button class="btn btn-ghost-dark" id="vs-close">关闭</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const $ = id => overlay.querySelector(id);
+    $("#vs-rate").oninput = () => { $("#vs-rate-val").textContent = $("#vs-rate").value + "x"; };
+    $("#vs-volume").oninput = () => { $("#vs-volume-val").textContent = Math.round(parseFloat($("#vs-volume").value) * 100) + "%"; };
+    function applySel() {
+      TTS.prefs.zh = $("#vs-zh").value;
+      TTS.prefs.en = $("#vs-en").value;
+      TTS.prefs.rate = parseFloat($("#vs-rate").value);
+      TTS.prefs.volume = parseFloat($("#vs-volume").value);
+      TTS.zhVoice = TTS.voices.find(v => v.name === TTS.prefs.zh) || TTS.zhVoice;
+      TTS.enVoice = TTS.voices.find(v => v.name === TTS.prefs.en) || TTS.enVoice;
+    }
+    $("#vs-try-zh").onclick = () => { applySel(); TTS.stop(); TTS.speak("你好恩恩,我是你的学习伙伴,这一关我们一起加油!", "zh"); };
+    $("#vs-try-en").onclick = () => { applySel(); TTS.stop(); TTS.speak("Hello! Welcome to Sunshine Middle School.", "en"); };
+    $("#vs-save").onclick = () => { applySel(); TTS.savePrefs(); overlay.remove(); };
+    $("#vs-close").onclick = () => { TTS.stop(); overlay.remove(); };
   }
 
   // ================================================================
@@ -124,7 +292,7 @@
     boss() { try { [392, 330, 392, 523].forEach((f, i) => this.tone(f, i * .12, .15, "square", .07)); } catch (e) {} }
   };
 
-  // ---------- 彩带 ----------
+  // ---------- 彩带 & 浮动提示 ----------
   function confetti(n) {
     const colors = ["#ff8a3d", "#5b6ef5", "#26b8a5", "#ef5b7b", "#ffd93d"];
     for (let i = 0; i < (n || 26); i++) {
@@ -138,7 +306,6 @@
       setTimeout(() => p.remove(), 2600);
     }
   }
-  // 浮动提示(COMBO / +XP)
   function floatTip(text, x, y, cls) {
     const t = document.createElement("div");
     t.className = "float-tip " + (cls || "");
@@ -147,6 +314,262 @@
     t.style.top = (y || window.innerHeight / 2) + "px";
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 1400);
+  }
+
+  // ================================================================
+  // 动画场景库(SVG 可视化动画)
+  // ================================================================
+  const SCENES = {
+    // 默认:大表情弹跳
+    emoji(el, p, step) {
+      el.innerHTML = `<div class="scene-emoji">${p.emoji || step.emoji || "💡"}</div>`;
+    },
+
+    // 数轴:小球跳跃 from → to
+    numberline(el, p) {
+      const min = -10, max = 10, W = 600, H = 200, y = 118;
+      const xOf = v => 30 + (v - min) / (max - min) * (W - 60);
+      const fmtNum = n => Math.abs(n) < 0.001 ? "0" : Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
+      const marks = [];
+      for (let v = min; v <= max; v += 2) {
+        marks.push(`<line x1="${xOf(v)}" y1="${y - 6}" x2="${xOf(v)}" y2="${y + 6}" stroke="#8a90b8" stroke-width="2"/>
+          <text x="${xOf(v)}" y="${y + 28}" text-anchor="middle" font-size="14"
+            fill="${v === p.to ? "#ff8a3d" : v === p.from ? "#5b6ef5" : v < 0 ? "#5b6ef5" : v > 0 ? "#ff5252" : "#2b2d42"}"
+            font-weight="${v === p.to || v === p.from || v === 0 ? "800" : "400"}">${v}</text>`);
+      }
+      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" class="scene-svg">
+        <line x1="16" y1="${y}" x2="${W - 16}" y2="${y}" stroke="#8a90b8" stroke-width="2.5"/>
+        <polygon points="${W - 16},${y} ${W - 30},${y - 7} ${W - 30},${y + 7}" fill="#8a90b8"/>
+        ${marks.join("")}
+        <circle class="nl-anim-dot" cx="${xOf(p.from)}" cy="${y - 14}" r="11" fill="#ff8a3d" stroke="#fff" stroke-width="3"/>
+        <text class="nl-anim-label" x="${xOf(p.from)}" y="${y - 34}" text-anchor="middle" font-size="17" font-weight="800" fill="#ff8a3d">${fmtNum(p.from)}</text>
+      </svg>`;
+      const dot = el.querySelector(".nl-anim-dot");
+      const label = el.querySelector(".nl-anim-label");
+      const x0 = xOf(p.from), x1 = xOf(p.to);
+      const hops = Math.min(4, Math.max(1, Math.abs(p.to - p.from)));
+      const t0 = performance.now(), dur = 1700;
+      (function anim(now) {
+        const t = Math.min((now - t0) / dur, 1);
+        const ease = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        const x = x0 + (x1 - x0) * ease;
+        const bounce = Math.abs(Math.sin(t * Math.PI * hops)) * 34;
+        dot.setAttribute("cx", x); dot.setAttribute("cy", y - 14 - bounce);
+        label.setAttribute("x", x); label.setAttribute("y", y - 38 - bounce);
+        label.textContent = fmtNum(p.from + (p.to - p.from) * ease);
+        if (t < 1) requestAnimationFrame(anim);
+      })(t0);
+    },
+
+    // 温度计:从 from 降/升到 to
+    thermo(el, p) {
+      const min = -30, max = 40;
+      const hOf = t => (t - min) / (max - min);
+      el.innerHTML = `<div class="scene-thermo">
+        <svg viewBox="0 0 600 200" class="scene-svg">
+          <rect x="262" y="14" width="42" height="150" rx="21" fill="#eceef8" stroke="#d9dcf0" stroke-width="3"/>
+          <rect class="th-fill" x="266" y="${18 + 142 * (1 - hOf(p.from))}" width="34" height="${142 * hOf(p.from)}" rx="17" fill="${p.from > 0 ? "#ff6b4a" : "#4a7dff"}"/>
+          <circle cx="283" cy="172" r="18" fill="${p.to > 0 ? "#ff6b4a" : "#4a7dff"}" class="th-bulb"/>
+          <text x="330" y="40" font-size="15" fill="#9aa0b5">40℃</text>
+          <line x1="306" y1="${18 + 142 * (1 - hOf(0))}" x2="322" y2="${18 + 142 * (1 - hOf(0))}" stroke="#2b2d42" stroke-width="2"/>
+          <text x="330" y="${23 + 142 * (1 - hOf(0))}" font-size="15" font-weight="800" fill="#2b2d42">0℃</text>
+          <text x="330" y="162" font-size="15" fill="#9aa0b5">−30℃</text>
+          <text class="th-num" x="185" y="105" text-anchor="middle" font-size="44" font-weight="900" fill="${p.from > 0 ? "#ff5252" : "#4a7dff"}">${p.from > 0 ? "+" : ""}${p.from}℃</text>
+        </svg></div>`;
+      const fill = el.querySelector(".th-fill");
+      const num = el.querySelector(".th-num");
+      const t0 = performance.now(), dur = 2000;
+      (function anim(now) {
+        const t = Math.min((now - t0) / dur, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        const cur = p.from + (p.to - p.from) * ease;
+        const h = 142 * hOf(cur);
+        fill.setAttribute("y", 18 + 142 - h);
+        fill.setAttribute("height", Math.max(2, h));
+        fill.setAttribute("fill", cur > 0 ? "#ff6b4a" : "#4a7dff");
+        num.textContent = (cur > 0 ? "+" : "") + Math.round(cur) + "℃";
+        num.setAttribute("fill", cur > 0 ? "#ff5252" : "#4a7dff");
+        if (t < 1) requestAnimationFrame(anim);
+      })(t0);
+    },
+
+    // 分数饼图:a/b + c/d = r/s 动态填充
+    fraction(el, p) {
+      const R = 40, C = 2 * Math.PI * R;
+      function pie(cx, frac, color, label, delay) {
+        return `<g>
+          <circle cx="${cx}" cy="86" r="${R}" fill="none" stroke="#eceef8" stroke-width="24"/>
+          <circle class="pie-fill" cx="${cx}" cy="86" r="${R}" fill="none" stroke="${color}" stroke-width="24"
+            stroke-dasharray="0 ${C}" data-target="${frac * C}" data-delay="${delay}"
+            transform="rotate(-90 ${cx} 86)" stroke-linecap="butt"/>
+          <text x="${cx}" y="162" text-anchor="middle" font-size="21" font-weight="800" fill="#2b2d42">${label}</text>
+        </g>`;
+      }
+      const [a, b] = p.a, [c, d] = p.b, [rn, rd] = p.r;
+      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg">
+        ${pie(120, a / b, "#5b6ef5", a + "/" + b, 0)}
+        <text x="210" y="96" text-anchor="middle" font-size="34" font-weight="800" fill="#9aa0b5">+</text>
+        ${pie(300, c / d, "#26b8a5", c + "/" + d, 600)}
+        <text x="392" y="96" text-anchor="middle" font-size="34" font-weight="800" fill="#9aa0b5">=</text>
+        ${pie(490, rn / rd, "#ff8a3d", rn + "/" + rd, 1400)}
+      </svg>`;
+      el.querySelectorAll(".pie-fill").forEach(c2 => {
+        setTimeout(() => {
+          c2.style.transition = "stroke-dasharray 1s cubic-bezier(.4,0,.2,1)";
+          c2.setAttribute("stroke-dasharray", `${c2.dataset.target} ${C}`);
+        }, parseInt(c2.dataset.delay, 10) + 100);
+      });
+    },
+
+    // Be 动词分拣:主语飞入对应的桶
+    match(el, p) {
+      el.innerHTML = `<div class="scene-match">${p.groups.map((g, gi) => `
+        <div class="match-col">
+          <div class="match-bucket" style="animation-delay:${gi * .15}s">${esc(g.head)}</div>
+          ${g.items.map((it, ii) => `<div class="match-chip" style="animation-delay:${.5 + gi * .5 + ii * .28}s">${esc(it)}</div>`).join("")}
+        </div>`).join("")}</div>`;
+    },
+
+    // 汉字多音字:大字 + 拼音气泡
+    char(el, p) {
+      const pos = [[150, 46], [452, 46], [118, 140], [478, 140], [300, 26]];
+      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg">
+        <text x="300" y="136" text-anchor="middle" font-size="104" font-weight="900" fill="#2b2d42" class="char-main">${p.char}</text>
+        ${p.pinyins.map((py, i) => `
+          <g class="char-bubble" style="animation-delay:${.5 + i * .55}s">
+            <rect x="${pos[i][0] - 52}" y="${pos[i][1] - 22}" width="104" height="36" rx="18"
+              fill="${i === p.highlight ? "#ff8a3d" : "#eef0ff"}"/>
+            <text x="${pos[i][0]}" y="${pos[i][1] + 3}" text-anchor="middle" font-size="17" font-weight="800"
+              fill="${i === p.highlight ? "#fff" : "#5b6ef5"}">${esc(py)}</text>
+          </g>`).join("")}
+      </svg>`;
+    },
+
+    // 大海:波浪 + 日出/月升银河(观沧海)
+    sea(el, p) {
+      const night = p.phase === "stars";
+      const stars = night ? Array.from({ length: 16 }, (_, i) =>
+        `<circle class="star-tw" style="animation-delay:${i * .17}s" cx="${30 + Math.random() * 540}" cy="${14 + Math.random() * 70}" r="${1.5 + Math.random() * 1.8}" fill="#fff"/>`).join("") : "";
+      const body = p.phase === "sun"
+        ? `<circle class="sea-rise" cx="300" cy="210" r="30" fill="#ffd93d"/>`
+        : night ? `<circle class="sea-rise" cx="440" cy="200" r="24" fill="#f4f6ff"/><ellipse cx="300" cy="60" rx="220" ry="26" fill="rgba(255,255,255,.14)" class="galaxy"/>` : "";
+      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg sea-svg">
+        <rect width="600" height="200" fill="${night ? "#1d2450" : "#cfe8ff"}"/>
+        ${stars}${body}
+        <path class="wave w1" fill="${night ? "#2c3a78" : "#7db8e8"}" d="M0,140 Q75,120 150,140 T300,140 T450,140 T600,140 T750,140 T900,140 V200 H0 Z"/>
+        <path class="wave w2" fill="${night ? "#3a4c96" : "#5b9fd8"}" d="M0,158 Q75,142 150,158 T300,158 T450,158 T600,158 T750,158 T900,158 V200 H0 Z"/>
+        <g class="boat"><path d="M270,132 L330,132 L318,148 L282,148 Z" fill="#8a5a2b"/><line x1="300" y1="132" x2="300" y2="100" stroke="#8a5a2b" stroke-width="3"/><path d="M300,100 L326,126 L300,126 Z" fill="#fff"/></g>
+      </svg>`;
+    },
+
+    // 干栏式 vs 半地穴式房屋(雨 / 雪)
+    house(el, p) {
+      const rain = Array.from({ length: 10 }, (_, i) =>
+        `<line class="rain" style="animation-delay:${i * .14}s" x1="${30 + i * 26}" y1="10" x2="${24 + i * 26}" y2="26" stroke="#6aa8e8" stroke-width="2.5" stroke-linecap="round"/>`).join("");
+      const snow = Array.from({ length: 10 }, (_, i) =>
+        `<circle class="snow" style="animation-delay:${i * .3}s" cx="${330 + i * 25}" cy="8" r="3" fill="#dfe8ff"/>`).join("");
+      el.innerHTML = `<svg viewBox="0 0 600 200" class="scene-svg">
+        <rect width="290" height="200" fill="#e8f6ee"/><rect x="310" width="290" height="200" fill="#eef2fb"/>
+        ${rain}${snow}
+        <!-- 干栏式:架空 -->
+        <g class="house-pop">
+          <line x1="80" y1="160" x2="80" y2="120" stroke="#8a5a2b" stroke-width="6"/>
+          <line x1="120" y1="160" x2="120" y2="120" stroke="#8a5a2b" stroke-width="6"/>
+          <line x1="160" y1="160" x2="160" y2="120" stroke="#8a5a2b" stroke-width="6"/>
+          <line x1="200" y1="160" x2="200" y2="120" stroke="#8a5a2b" stroke-width="6"/>
+          <rect x="65" y="90" width="150" height="34" rx="4" fill="#c98d4e"/>
+          <path d="M55,92 L140,52 L225,92 Z" fill="#7a9c58"/>
+          <line x1="20" y1="162" x2="270" y2="162" stroke="#9fc8ae" stroke-width="5"/>
+        </g>
+        <text x="140" y="190" text-anchor="middle" font-size="15" font-weight="800" fill="#2f7d4f">干栏式 · 长江流域 · 防潮 🌧️</text>
+        <!-- 半地穴式:半入地下 -->
+        <g class="house-pop" style="animation-delay:.5s">
+          <rect x="340" y="140" width="220" height="40" fill="#d8c8a8"/>
+          <rect x="400" y="118" width="100" height="34" fill="#b09060"/>
+          <path d="M385,122 L450,74 L515,122 Z" fill="#8a6a3a"/>
+        </g>
+        <text x="450" y="196" text-anchor="middle" font-size="15" font-weight="800" fill="#5b6ef5">半地穴式 · 黄河流域 · 保暖 ❄️</text>
+      </svg>`;
+    },
+
+    // 线索卡片:阅读题/审题题用
+    clues(el, p) {
+      el.innerHTML = `<div class="scene-clues">${p.items.map((it, i) => `
+        <div class="clue-card" style="animation-delay:${i * .25}s">
+          <b>${esc(it.head)}</b><span>${esc(it.text)}</span>
+        </div>`).join("")}</div>`;
+    }
+  };
+
+  // ================================================================
+  // 动画课堂播放器(可视化舞台 + 字幕 + 配音)
+  // ================================================================
+  let lessonToken = 0;
+  function createLessonPlayer(el, steps, opts) {
+    opts = opts || {};
+    const screen = el.querySelector(".lesson-screen");
+    const visual = el.querySelector(".stage-visual");
+    const caption = el.querySelector(".stage-caption");
+    const progress = el.querySelector(".stage-progress > i");
+    const playBtn = el.querySelector(".lesson-play");
+    const stopBtn = el.querySelector(".lesson-stop");
+
+    function showStep(step) {
+      const scene = step.scene || { type: "emoji" };
+      (SCENES[scene.type] || SCENES.emoji)(visual, scene, step);
+      caption.innerHTML = `<span class="cap-text">${esc(step.text)}</span>`;
+      caption.classList.remove("cap-in");
+      void caption.offsetWidth; // 重启动画
+      caption.classList.add("cap-in");
+    }
+
+    async function play() {
+      const token = ++lessonToken;
+      TTS.stop();
+      playBtn.style.display = "none";
+      stopBtn.style.display = "";
+      screen.style.display = "";
+      screen.classList.add("playing");
+      for (let i = 0; i < steps.length; i++) {
+        if (token !== lessonToken) return;
+        progress.style.width = ((i + 1) / steps.length * 100) + "%";
+        showStep(steps[i]);
+        await TTS.speak(steps[i].speak || steps[i].text, guessLang(steps[i].text));
+        if (token !== lessonToken) return;
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (token !== lessonToken) return;
+      screen.classList.remove("playing");
+      stopBtn.style.display = "none";
+      playBtn.style.display = "";
+      playBtn.innerHTML = "🔁 再看一遍";
+    }
+    function stop() {
+      lessonToken++;
+      TTS.stop();
+      screen.classList.remove("playing");
+      stopBtn.style.display = "none";
+      playBtn.style.display = "";
+    }
+    playBtn.addEventListener("click", play);
+    stopBtn.addEventListener("click", stop);
+    if (opts.autoplay) setTimeout(play, 500);
+  }
+
+  function lessonPlayerHTML(title, hint) {
+    return `
+      <div class="lesson-head">
+        <span class="lesson-title">🎬 ${esc(title)}</span>
+        <span class="lesson-ctrl">
+          <button class="btn btn-primary lesson-play">▶ 播放动画</button>
+          <button class="btn btn-outline lesson-stop" style="display:none">⏹ 停止</button>
+        </span>
+      </div>
+      <div class="lesson-screen">
+        <div class="stage-visual"><div class="lesson-hint">${esc(hint || "点「播放动画」,配音老师开讲啦 🎙️")}</div></div>
+        <div class="stage-caption"><span class="cap-text" style="color:var(--text-light);font-weight:400">动画和字幕会在这里出现…</span></div>
+        <div class="stage-progress"><i></i></div>
+      </div>`;
   }
 
   // ================================================================
@@ -178,10 +601,21 @@
             <div class="gs-sub">${xp} / ${nextLvXP} XP</div></div>
           <div class="game-stat"><div class="gs-num">${store.streak || 0} 天</div><div class="gs-label">连续打卡 🔥</div></div>
           <div class="game-stat"><div class="gs-num">${doneCount}</div><div class="gs-label">已通关卡</div></div>
-          <div class="game-stat badges-stat">
-            <div class="gs-label">徽章墙 🏅</div>
-            <div class="badge-row">${Object.keys(BADGES).map(k =>
+        <div class="game-stat badges-stat">
+          <div class="gs-label">徽章墙 🏅</div>
+          <div class="badge-row">${Object.keys(BADGES).map(k =>
               `<span class="badge-item ${badges.includes(k) ? "owned" : ""}" title="${BADGES[k].name}:${BADGES[k].desc}">${BADGES[k].icon}</span>`).join("")}</div>
+          </div>
+        </div>
+        <div class="storage-panel">
+          <div>
+            <b>数据已保存在本浏览器</b>
+            <span>等级、XP、徽章、连续打卡和每关报告会写入 localStorage。同一浏览器重新打开会保留;换设备、无痕模式或清理网站数据可能丢失。</span>
+          </div>
+          <div class="storage-actions">
+            <button class="mini-voice" id="btn-export-save">导出存档</button>
+            <button class="mini-voice" id="btn-import-save">导入存档</button>
+            <input id="save-file" type="file" accept="application/json,.json" hidden>
           </div>
         </div>
         <div class="progress-wrap">
@@ -232,13 +666,24 @@
     app.querySelectorAll(".day-card[data-day]").forEach(card => {
       card.addEventListener("click", () => showHonestyGate(parseInt(card.dataset.day, 10)));
     });
+    const exportBtn = document.getElementById("btn-export-save");
+    const importBtn = document.getElementById("btn-import-save");
+    const fileInput = document.getElementById("save-file");
+    if (exportBtn) exportBtn.addEventListener("click", exportSaveData);
+    if (importBtn && fileInput) {
+      importBtn.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) importSaveData(fileInput.files[0]);
+        fileInput.value = "";
+      });
+    }
   }
 
   // ================================================================
-  // 诚信之门(防 AI 作弊第一道关)
+  // 诚信之门
   // ================================================================
   function showHonestyGate(day) {
-    if (getResult(day)) { renderDay(day); return; } // 已完成的可直接回看
+    if (getResult(day)) { renderDay(day); return; }
     const overlay = document.createElement("div");
     overlay.className = "gate-overlay";
     overlay.innerHTML = `
@@ -258,7 +703,7 @@
   }
 
   // ================================================================
-  // 学习页(动画课堂 + 深度题)
+  // 学习页
   // ================================================================
   let dayStartTime = null;
   let dayAnswers = {};
@@ -282,7 +727,7 @@
     let html = `
       <div class="day-header no-copy">
         <h1>${esc(data.title)}</h1>
-        <div class="meta">⏱️ ${esc(data.estimate)} · 🎬 蓝色框是动画课堂,点「播放讲解」听配音 · 答题立刻知对错</div>
+        <div class="meta">⏱️ ${esc(data.estimate)} · 🎬 每个蓝框都是一部带配音的动画小课,记得开声音!</div>
       </div>`;
 
     data.sections.forEach((sec, si) => {
@@ -311,17 +756,22 @@
     app.innerHTML = html;
 
     bindWidgets();
-    bindLessons();
+    // 绑定动画课堂
+    data.sections.forEach((sec, si) => sec.units.forEach((u, ui) =>
+      u.blocks.forEach((b, bi) => {
+        if (b.type !== "lesson") return;
+        const el = app.querySelector(`[data-lesson="${si}-${ui}-${bi}"]`);
+        if (el) createLessonPlayer(el, b.steps);
+      })));
     bindInlineQuestions(day, data, totalQ);
     bindAntiCopy();
   }
 
-  // ---------- 防复制 ----------
   function bindAntiCopy() {
     app.querySelectorAll(".no-copy").forEach(el => {
       ["copy", "cut", "contextmenu", "selectstart", "dragstart"].forEach(evt =>
         el.addEventListener(evt, e => {
-          if (e.target.closest("input")) return; // 填空框正常使用
+          if (e.target.closest("input")) return;
           e.preventDefault();
         }));
     });
@@ -335,16 +785,7 @@
       case "rule":
         return `<div class="rule-card"><h3>${b.title}</h3><div>${b.html}</div></div>`;
       case "lesson":
-        return `<div class="lesson-player" data-lesson="${bid}">
-          <div class="lesson-head">
-            <span class="lesson-title">🎬 ${esc(b.title)}</span>
-            <span class="lesson-ctrl">
-              <button class="btn btn-primary lesson-play">▶ 播放讲解</button>
-              <button class="btn btn-outline lesson-stop" style="display:none">⏹ 停止</button>
-            </span>
-          </div>
-          <div class="lesson-stage"><div class="lesson-hint">点「播放讲解」,老师开讲啦 🎙️(讲解会一句一句出现并朗读)</div></div>
-        </div>`;
+        return `<div class="lesson-player" data-lesson="${bid}">${lessonPlayerHTML(b.title)}</div>`;
       case "example":
         return `<div class="example-card">
           <div class="ex-q">${b.q}</div>
@@ -357,7 +798,7 @@
         }</div></div>`;
       case "numberline":
         return `<div class="numberline-widget" data-widget="numberline">
-          <div class="nl-display"><span class="zero">点击按钮,在数轴上移动小球 👇</span></div>
+          <div class="nl-display"><span class="zero">动手试一试:点按钮移动小球 👇</span></div>
           <svg class="nl-svg" viewBox="0 0 660 80">
             <line x1="10" y1="40" x2="650" y2="40" stroke="#2b2d42" stroke-width="2"/>
             <polygon points="650,40 638,34 638,46" fill="#2b2d42"/>
@@ -379,7 +820,7 @@
           <div class="thermo-body"><div class="thermo-fill" style="height:58%"></div></div>
           <div class="thermo-info">
             <div class="thermo-temp hot">+25℃</div>
-            <div class="thermo-desc">夏天真热呀 ☀️</div>
+            <div class="thermo-desc">动手试一试:点按钮变温度 ☀️</div>
             <div class="thermo-controls">
               <button class="nl-btn" data-temp="35">夏日 35℃</button>
               <button class="nl-btn" data-temp="25">舒适 25℃</button>
@@ -390,7 +831,7 @@
           </div>
         </div>`;
       case "flashcards":
-        return `<div class="vocab-grid">${b.words.map((w, wi) => `
+        return `<div class="vocab-grid">${b.words.map(w => `
           <div class="vocab-card" data-word="${esc(w.word)}">
             <div class="vocab-inner">
               <div class="vocab-face vocab-front">
@@ -415,68 +856,6 @@
     }
   }
 
-  // ---------- 动画课堂播放 ----------
-  let lessonToken = 0; // 防止并发播放
-  function bindLessons() {
-    // 收集 lesson 数据
-    const lessonMap = {};
-    const data = currentDayData;
-    if (data) data.sections.forEach((sec, si) => sec.units.forEach((u, ui) =>
-      u.blocks.forEach((b, bi) => { if (b.type === "lesson") lessonMap[si + "-" + ui + "-" + bi] = b; })));
-
-    app.querySelectorAll(".lesson-player").forEach(el => {
-      const b = lessonMap[el.dataset.lesson];
-      if (!b) return;
-      const stage = el.querySelector(".lesson-stage");
-      const playBtn = el.querySelector(".lesson-play");
-      const stopBtn = el.querySelector(".lesson-stop");
-
-      async function play() {
-        const token = ++lessonToken;
-        TTS.stop();
-        playBtn.style.display = "none";
-        stopBtn.style.display = "";
-        stage.innerHTML = "";
-        for (let i = 0; i < b.steps.length; i++) {
-          if (token !== lessonToken) return;
-          const s = b.steps[i];
-          const line = document.createElement("div");
-          line.className = "lesson-line";
-          line.innerHTML = `<span class="lesson-emoji">${s.emoji || "💡"}</span><span class="lesson-text">${esc(s.text)}</span>`;
-          stage.appendChild(line);
-          stage.querySelectorAll(".lesson-line").forEach(l => l.classList.remove("current"));
-          line.classList.add("current");
-          line.scrollIntoView({ block: "nearest", behavior: "smooth" });
-          await TTS.speak(s.speak || s.text, guessLang(s.text));
-          if (token !== lessonToken) return;
-          await new Promise(r => setTimeout(r, 350));
-        }
-        if (token !== lessonToken) return;
-        stage.querySelectorAll(".lesson-line").forEach(l => l.classList.remove("current"));
-        stopBtn.style.display = "none";
-        playBtn.style.display = "";
-        playBtn.textContent = "🔁 再听一遍";
-      }
-      function stop() {
-        lessonToken++;
-        TTS.stop();
-        stopBtn.style.display = "none";
-        playBtn.style.display = "";
-      }
-      playBtn.addEventListener("click", play);
-      stopBtn.addEventListener("click", stop);
-    });
-
-    // 小喇叭按钮(口诀 / 例句 / 全文)
-    app.querySelectorAll(".mini-voice").forEach(btn => {
-      btn.addEventListener("click", e => {
-        e.stopPropagation();
-        TTS.stop();
-        TTS.speak(btn.dataset.text, guessLang(btn.dataset.text));
-      });
-    });
-  }
-
   // ---------- 内嵌深度题 ----------
   function renderInlineQuestion(q, key, subject) {
     let inner;
@@ -495,13 +874,12 @@
           <button class="mini-voice q-voice" title="朗读题目">🔊</button></span>
         <span class="q-points">${q.points} XP</span>
       </div>
+      ${q.demoSteps ? `<div class="lesson-player question-demo">${lessonPlayerHTML(q.demoTitle || "题目前动画演示", "先看演示,再自己作答。演示只讲思路,不直接报答案。")}</div>` : ""}
       ${inner}
       <div class="q-submit-row"><button class="btn btn-primary q-submit">提交答案</button></div>
       <div class="q-feedback"></div>
     </div>`;
   }
-
-  let currentDayData = null;
 
   function bindInlineQuestions(day, data, totalQ) {
     const qMap = {};
@@ -514,7 +892,10 @@
       const info = qMap[key];
       const q = info.q;
 
-      // 朗读题目
+      if (q.demoSteps) {
+        createLessonPlayer(qEl.querySelector(".question-demo"), q.demoSteps);
+      }
+
       qEl.querySelector(".q-voice").addEventListener("click", e => {
         e.stopPropagation();
         TTS.stop();
@@ -551,13 +932,11 @@
           qEl.querySelector(".fill-input").disabled = true;
         }
 
-        // 答题用时(防作弊监测)
         const now = Date.now();
         const elapsed = (now - lastAnswerTime) / 1000;
         lastAnswerTime = now;
-        const fast = correct && elapsed < 12; // 12 秒内答对深度题 → 标记
+        const fast = correct && elapsed < 12;
 
-        // 连击与音效
         if (correct) {
           combo += 1; maxCombo = Math.max(maxCombo, combo);
           if (q.boss) { SFX.boss(); confetti(40); } else { SFX.correct(); if (combo >= 2) confetti(12); }
@@ -574,56 +953,16 @@
         qEl.classList.add("locked", correct ? "correct" : "wrong");
         qEl.querySelector(".q-submit-row").style.display = "none";
 
-        // 反馈 + 动画配音讲解
         const fb = qEl.querySelector(".q-feedback");
         fb.innerHTML = `
           <div class="q-result ${correct ? "ok" : "no"}">
             ${correct ? `🎉 ${q.boss ? "BOSS 被你击败了!" : "回答正确!"}+${q.points} XP` : `💪 这道题有点难,正确答案:<b>${esc(q.type === "choice" ? "ABCD"[q.answer] + ". " + q.options[q.answer] : q.accept[0])}</b>`}
             <div class="explain">💡 ${esc(q.explain)}</div>
           </div>
-          ${q.explainSteps ? `<div class="lesson-player explain-lesson">
-            <div class="lesson-head">
-              <span class="lesson-title">🎬 名师讲解(强烈建议听一遍)</span>
-              <span class="lesson-ctrl">
-                <button class="btn btn-primary lesson-play">▶ 播放讲解</button>
-                <button class="btn btn-outline lesson-stop" style="display:none">⏹ 停止</button>
-              </span>
-            </div>
-            <div class="lesson-stage"><div class="lesson-hint">听懂讲解,下次遇到同类题就是送分题 🎁</div></div>
-          </div>` : ""}`;
+          ${q.explainSteps ? `<div class="lesson-player explain-lesson">${lessonPlayerHTML("名师动画讲解(强烈建议看一遍)", "听懂讲解,下次遇到同类题就是送分题 🎁")}</div>` : ""}`;
 
-        // 绑定讲解动画
         if (q.explainSteps) {
-          const el = fb.querySelector(".explain-lesson");
-          const stage = el.querySelector(".lesson-stage");
-          const playBtn = el.querySelector(".lesson-play");
-          const stopBtn = el.querySelector(".lesson-stop");
-          async function play() {
-            const token = ++lessonToken;
-            TTS.stop();
-            playBtn.style.display = "none"; stopBtn.style.display = "";
-            stage.innerHTML = "";
-            for (const s of q.explainSteps) {
-              if (token !== lessonToken) return;
-              const line = document.createElement("div");
-              line.className = "lesson-line";
-              line.innerHTML = `<span class="lesson-emoji">${s.emoji || "💡"}</span><span class="lesson-text">${esc(s.text)}</span>`;
-              stage.appendChild(line);
-              stage.querySelectorAll(".lesson-line").forEach(l => l.classList.remove("current"));
-              line.classList.add("current");
-              line.scrollIntoView({ block: "nearest", behavior: "smooth" });
-              await TTS.speak(s.speak || s.text, guessLang(s.text));
-              if (token !== lessonToken) return;
-              await new Promise(r => setTimeout(r, 350));
-            }
-            if (token !== lessonToken) return;
-            stage.querySelectorAll(".lesson-line").forEach(l => l.classList.remove("current"));
-            stopBtn.style.display = "none"; playBtn.style.display = ""; playBtn.textContent = "🔁 再听一遍";
-          }
-          playBtn.addEventListener("click", play);
-          stopBtn.addEventListener("click", () => { lessonToken++; TTS.stop(); stopBtn.style.display = "none"; playBtn.style.display = ""; });
-          // 自动播放讲解(答错时)
-          if (!correct) setTimeout(play, 600);
+          createLessonPlayer(fb.querySelector(".explain-lesson"), q.explainSteps, { autoplay: !correct });
         }
 
         dayAnswers[key] = {
@@ -673,14 +1012,12 @@
       });
     });
 
-    // ---- 游戏化结算 ----
     const s = loadStore();
     const firstTime = !s["day" + day];
     const oldLv = levelOf(s.xp || 0);
     if (firstTime) s.xp = (s.xp || 0) + score;
     const newLv = levelOf(s.xp || 0);
 
-    // 连续打卡
     const today = new Date().toDateString();
     if (s.lastDate !== today) {
       const yesterday = new Date(Date.now() - 864e5).toDateString();
@@ -688,7 +1025,6 @@
       s.lastDate = today;
     }
 
-    // 徽章
     s.badges = s.badges || [];
     const newBadges = [];
     function award(k) { if (!s.badges.includes(k)) { s.badges.push(k); newBadges.push(k); } }
@@ -711,7 +1047,7 @@
       finishedAt: new Date().toLocaleString("zh-CN")
     };
     s["day" + day] = result;
-    saveStore(s);
+    if (!saveStore(s)) return;
     if (newBadges.length || newLv > oldLv) SFX.badge();
     renderScore(day, result);
   }
@@ -788,7 +1124,7 @@
       </div>
       <div class="section-card">
         <h2>📋 全部题目对错一览(共 ${result.detail.length} 题)</h2>
-        <div class="section-meta">错题请回到关卡里把「名师讲解」再听一遍</div>
+        <div class="section-meta">错题请回到关卡里把「名师动画讲解」再看一遍</div>
         ${rows}
       </div>`;
     refreshGameChip();
@@ -813,7 +1149,6 @@
   // 导出图片报告(Canvas → PNG)
   // ================================================================
   function exportImage(day, result) {
-    const name = "恩恩";
     const cur = window.CURRICULUM[day - 1];
     const pct = Math.round(result.score / result.total * 100);
     const c = scoreComment(pct);
@@ -888,7 +1223,6 @@
     ctx.font = "bold 19px 'PingFang SC','Microsoft YaHei',sans-serif";
     ctx.fillText(c.title + " " + c.comment, PAD + c.stars * 34 + 16, y + 40);
 
-    // 战利品行
     y = headerH + scoreH;
     ctx.fillStyle = "#8b5cf6";
     ctx.font = "bold 15px 'PingFang SC','Microsoft YaHei',sans-serif";
@@ -992,14 +1326,19 @@
         btn.style.display = "none";
       });
     });
-    // 单词卡:点击发音 + 翻面
     app.querySelectorAll(".vocab-card").forEach(card => {
       card.addEventListener("click", (e) => {
         if (e.target.closest(".mini-voice")) return;
         card.classList.toggle("flipped");
         const w = card.dataset.word;
-        if (w && card.classList.contains("flipped")) { TTS.stop(); TTS.speak(w, "en"); }
-        else if (w) { TTS.stop(); TTS.speak(w, "en"); }
+        if (w) { TTS.stop(); TTS.speak(w, "en"); }
+      });
+    });
+    app.querySelectorAll(".mini-voice").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        TTS.stop();
+        TTS.speak(btn.dataset.text, guessLang(btn.dataset.text));
       });
     });
     app.querySelectorAll('[data-widget="numberline"]').forEach(w => {
@@ -1038,11 +1377,7 @@
   // ================================================================
   // 启动
   // ================================================================
-  // 供 renderDay 中 bindLessons 使用
-  Object.defineProperty(window, "__currentDayData", { get: () => currentDayData });
-  const _renderDay = renderDay;
-  renderDay = function (day) { currentDayData = window.DAYS[day] || null; _renderDay(day); };
-
   document.getElementById("btn-home").addEventListener("click", renderHome);
+  document.getElementById("btn-voice").addEventListener("click", showVoiceSettings);
   renderHome();
 })();

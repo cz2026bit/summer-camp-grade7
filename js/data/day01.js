@@ -55,6 +55,11 @@ window.DAYS[1] = {
           q: { type: "choice", points: 15, voice: "zh",
             q: "恩恩,请判断这三句话,哪些是对的?①0 既不是正数也不是负数 ②−0.5 比 −1 小,因为 0.5 比 1 小 ③气温从 −3℃ 升高 5℃ 后是 +2℃",
             options: ["①②③都对", "只有①③对", "只有①对", "只有②③对"], answer: 1,
+            demoSteps: [
+              { text: "先把三个判断拆开看:0 是数轴原点,它是正负数的分界线。", emoji: "🚪", scene: { type: "numberline", from: -2, to: 0 } },
+              { text: "比较两个负数,不要只看数字大小,要看它们在数轴上的左右位置。越往右越大。", emoji: "📏", scene: { type: "numberline", from: -1, to: -0.5 } },
+              { text: "气温升高,就是在数轴上向右走。从 −3℃ 升高 5℃,先想方向,再数格子。", emoji: "🌡️", scene: { type: "numberline", from: -3, to: 2 } }
+            ],
             explain: "①对,0 是分界线;②错,−0.5 在 −1 右边,所以 −0.5 > −1,负数比大小和正数相反;③对,−3 向右走 5 格到 +2。",
             explainSteps: [
               { text: "第①句:0 既不是正数也不是负数,这是定义,正确!", emoji: "✅" },
@@ -72,6 +77,15 @@ window.DAYS[1] = {
           q: { type: "choice", points: 20, boss: true, voice: "zh",
             q: "科学实验:一杯 22℃ 的水放进冷冻室后,温度每分钟下降 2℃。水降到 0℃ 时开始结冰,再继续降到 −6℃ 时被取出。请问这杯水在冷冻室里一共待了多少分钟?",
             options: ["11 分钟", "14 分钟", "8 分钟", "28 分钟"], answer: 1,
+            demoSteps: [
+              { text: "遇到降温题,先画温度路线:从 22℃ 一路下降,会先到 0℃。", emoji: "🌡️", scene: { type: "thermo", from: 22, to: 0 } },
+              { text: "到 0℃ 之后还没结束,题目说继续降到 −6℃,所以要再算第二段。", emoji: "🧊", scene: { type: "thermo", from: 0, to: -6 } },
+              { text: "每分钟下降 2℃,所以每一段都用「温度差 ÷ 2」。最后把两段时间合起来。", emoji: "🧮", scene: { type: "clues", items: [
+                { head: "第一段", text: "22℃ 到 0℃" },
+                { head: "第二段", text: "0℃ 到 −6℃" },
+                { head: "合计", text: "两段时间相加" }
+              ] } }
+            ],
             explain: "从 22℃ 降到 0℃ 需要 22÷2=11 分钟;从 0℃ 继续降到 −6℃ 又需要 6÷2=3 分钟;共 11+3=14 分钟。",
             explainSteps: [
               { text: "别被吓到,BOSS 题就是把简单的步骤连起来。我们分两段算。", emoji: "🧩" },
@@ -130,6 +144,23 @@ window.DAYS[1] = {
               "Li Ming and his sister are in the library.",
               "She are my English teacher."
             ], answer: 2,
+            demoSteps: [
+              { text: "做 Be 动词题,第一步不是看选项,而是抓真正的主语。", emoji: "🔍", scene: { type: "clues", items: [
+                { head: "Step 1", text: "找主语" },
+                { head: "Step 2", text: "判断单数/复数" },
+                { head: "Step 3", text: "配 am/is/are" }
+              ] } },
+              { text: "主语分好类,Be 动词就像自动归队:I 用 am,单数用 is,复数用 are。", emoji: "📦", scene: { type: "match", groups: [
+                { head: "am", items: ["I"] },
+                { head: "is", items: ["he / she / it", "单数名词"] },
+                { head: "are", items: ["you", "we / they", "A and B"] }
+              ] } },
+              { text: "看到 on the desk、in the library 这类地点短语,别被带跑,它们不是主语。", emoji: "🎭", scene: { type: "clues", items: [
+                { head: "真正主语", text: "The books" },
+                { head: "修饰地点", text: "on the desk" },
+                { head: "判断", text: "books 是复数" }
+              ] } }
+            ],
             explain: "C 正确:Li Ming and his sister 是两个人(复数)配 are。A 错:两个人要用 are;B 错:主语 The books 是复数要用 are;D 错:She 要用 is。",
             explainSteps: [
               { text: "这道题考的是「找主语」的真功夫,一句一句来。", emoji: "🔍" },
@@ -158,6 +189,19 @@ window.DAYS[1] = {
               "The library is in the teaching building.",
               "Li Ming doesn't like the school uniform."
             ], answer: 1,
+            demoSteps: [
+              { text: "阅读推理题要像侦探:每个选项都要回原文找证据。", emoji: "🕵️", scene: { type: "clues", items: [
+                { head: "so", text: "前因后果" },
+                { head: "because", text: "解释原因" },
+                { head: "next to", text: "判断位置" }
+              ] } },
+              { text: "看见 so,就要连起来读:前一句是原因,后一句是结果。", emoji: "🔗", scene: { type: "clues", items: [
+                { head: "原因", text: "I love reading" },
+                { head: "结果", text: "favorite place" },
+                { head: "方法", text: "因果要匹配" }
+              ] } },
+              { text: "不要只找相同单词,还要判断意思有没有被偷换:boring、in、doesn't like 都要核对。", emoji: "⚠️", scene: { type: "emoji", emoji: "🧭" } }
+            ],
             explain: "原文说 I love reading, so the library is my favorite place——因为爱读书,所以最爱图书馆,B 正确。A 错:姐姐觉得历史像时光机(有趣);C 错:图书馆在操场旁边;D 错:他觉得校服很酷。",
             explainSteps: [
               { text: "推理题的秘诀:每个选项都回原文找证据,不能凭感觉。", emoji: "🕵️" },
@@ -188,6 +232,15 @@ window.DAYS[1] = {
           q: { type: "choice", points: 10, voice: "zh",
             q: "户外音乐会上,歌手唱一句,观众跟着唱一句,记者写道:「台下观众纷纷应和,人声鼎沸。」这句话中「和」的读音与下面哪个词中的「和」相同?",
             options: ["和平共处", "曲高和寡", "和衣而卧", "风和日丽"], answer: 1,
+            demoSteps: [
+              { text: "多音字不要硬背,先看意思。这个方法叫「据义定音」。", emoji: "🔑", scene: { type: "char", char: "和", pinyins: ["hé", "hè", "huó", "huò", "hú"], highlight: 1 } },
+              { text: "如果是声音相互呼应、跟着唱,「和」就读 hè。", emoji: "🎵", scene: { type: "clues", items: [
+                { head: "歌手唱", text: "一句" },
+                { head: "观众跟", text: "一句" },
+                { head: "含义", text: "呼应、跟唱" }
+              ] } },
+              { text: "再回到选项里找同样意思的词,读音就能锁定。", emoji: "🎯", scene: { type: "char", char: "和", pinyins: ["平和", "跟唱", "掺合", "和面"], highlight: 1 } }
+            ],
             explain: "「应和」与「曲高和寡」的「和」都是「跟着唱、呼应」的意思,读 hè。据义定音:和平/风和日丽读 hé,和衣而卧读 hé(温和义类),而跟唱呼应义读 hè。",
             explainSteps: [
               { text: "先用密码「据义定音」:观众跟着歌手唱,这是呼应、跟唱的意思,所以「应和」读 hè。", emoji: "🔑" },
@@ -223,6 +276,15 @@ window.DAYS[1] = {
               "古人不懂天文,以为日月真的从海里升起",
               "为了押韵,随便写的"
             ], answer: 1,
+            demoSteps: [
+              { text: "古诗鉴赏先分清两层:眼前看到的景,和心里涌起的情。", emoji: "🌊", scene: { type: "sea", phase: "sun" } },
+              { text: "诗人写日月星辰好像从海里出来,这是想象和夸张,不是自然课记录。", emoji: "🌌", scene: { type: "sea", phase: "stars" } },
+              { text: "遇到这种句子,就问:诗人为什么要把景写得这么大?它往往在托起心中的志向。", emoji: "❤️", scene: { type: "clues", items: [
+                { head: "景", text: "大海壮阔" },
+                { head: "法", text: "夸张想象" },
+                { head: "情", text: "胸怀志向" }
+              ] } }
+            ],
             explain: "这是全诗的点睛之笔:借想象中的大海吞吐日月星辰,抒发统一天下的壮志,即「借景抒情」。诗人写的不是眼睛看到的,而是心里装着的。",
             explainSteps: [
               { text: "好诗往往「说一物,指另一物」。曹操写海,真的只是写海吗?", emoji: "🤔" },
@@ -266,6 +328,15 @@ window.DAYS[1] = {
               "南方潮湿多雨需要防潮通风,北方寒冷干燥需要保暖防寒",
               "半坡人比较穷,建不起高房子"
             ], answer: 2,
+            demoSteps: [
+              { text: "历史题要追问:同一个时代,为什么生活方式不一样?先看自然环境。", emoji: "❓", scene: { type: "house" } },
+              { text: "南方潮湿多雨,房子架起来更容易防潮通风;北方冬天冷,半地穴式更容易保暖。", emoji: "🏠", scene: { type: "clues", items: [
+                { head: "南方", text: "潮湿多雨" },
+                { head: "干栏式", text: "防潮通风" },
+                { head: "北方", text: "寒冷干燥" }
+              ] } },
+              { text: "所以答题时不要选表面原因,要找能同时解释两种房子的根本原因。", emoji: "🔑", scene: { type: "house" } }
+            ],
             explain: "自然环境决定生活方式:长江流域潮湿多雨,架空的干栏式可防潮防虫;黄河流域寒冷干燥,半地穴式冬暖夏凉。同理,南方水多种水稻,北方干旱种粟。",
             explainSteps: [
               { text: "历史不是死记硬背,而是问一个字:为什么?", emoji: "❓" },

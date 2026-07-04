@@ -308,6 +308,15 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 .badge-item { opacity: .22; filter: grayscale(1); cursor: help; transition: transform .15s; }
 .badge-item.owned { opacity: 1; filter: none; }
 .badge-item:hover { transform: scale(1.3); }
+.storage-panel {
+  margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+  background: #fffdf5; border: 1px solid #f0e4bf;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  text-align: left;
+}
+.storage-panel b { display: block; font-size: 13px; color: var(--text); }
+.storage-panel span { display: block; font-size: 12px; color: var(--text-light); line-height: 1.6; }
+.storage-actions { display: flex; gap: 8px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
 
 /* ===== 诚信之门 ===== */
 .gate-overlay {
@@ -327,6 +336,27 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   font-weight: 700; margin: 18px 0; line-height: 1.8;
 }
 .btn-ghost-dark { background: none; color: var(--text-light); font-size: 13px; margin-top: 10px; }
+.voice-card { max-width: 620px; text-align: left; }
+.voice-card .gate-icon, .voice-card h2 { text-align: center; }
+.voice-status {
+  background: #f7f8fc; border: 1px solid #e5e8f5; border-radius: 12px;
+  padding: 10px 12px; font-size: 13px; color: var(--text-light); margin-bottom: 12px;
+}
+.vs-row {
+  display: grid; grid-template-columns: 86px minmax(0, 1fr) auto;
+  align-items: center; gap: 10px; margin: 10px 0;
+}
+.vs-row label { font-weight: 700; font-size: 13px; }
+.vs-row select, .vs-row input[type="range"] { min-width: 0; width: 100%; }
+.vs-row select {
+  border: 2px solid #e5e8f5; border-radius: 10px; padding: 8px 10px;
+  font-family: inherit; color: var(--text); background: #fff;
+}
+.vs-row span { font-size: 12px; color: var(--text-light); min-width: 42px; }
+.vs-hint {
+  margin-top: 12px; background: var(--primary-light); color: #4e5bc5;
+  padding: 12px 14px; border-radius: 12px; font-size: 13px; line-height: 1.7;
+}
 
 /* ===== 动画课堂 ===== */
 .lesson-player {
@@ -338,6 +368,58 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 .lesson-ctrl .btn { font-size: 13px; padding: 8px 20px; }
 .lesson-stage { margin-top: 14px; max-height: 340px; overflow-y: auto; }
 .lesson-hint { color: var(--text-light); font-size: 13px; }
+.lesson-screen {
+  margin-top: 14px; border-radius: 14px; overflow: hidden;
+  background: rgba(255,255,255,.72); border: 1px solid rgba(217,223,248,.9);
+}
+.stage-visual {
+  min-height: 210px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #ffffff, #f8faff);
+}
+.stage-caption {
+  min-height: 70px; padding: 12px 16px; display: flex; align-items: center;
+  background: #fff; border-top: 1px solid #e5e8f5;
+}
+.stage-caption .cap-text { font-size: 15px; font-weight: 700; line-height: 1.8; }
+.stage-caption.cap-in .cap-text { animation: captionIn .35s ease both; }
+.stage-progress { height: 5px; background: #e5e8f5; }
+.stage-progress > i {
+  display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--primary), var(--english));
+  transition: width .35s ease;
+}
+.scene-svg { width: 100%; height: 210px; display: block; }
+.scene-emoji { font-size: 86px; animation: scenePop 1.1s cubic-bezier(.34,1.56,.64,1) both; }
+.scene-match, .scene-clues {
+  width: 100%; min-height: 210px; padding: 18px;
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+}
+.match-col { display: grid; gap: 8px; min-width: 150px; justify-items: center; }
+.match-bucket {
+  min-width: 110px; text-align: center; padding: 8px 14px; border-radius: 999px;
+  background: var(--primary); color: #fff; font-weight: 800;
+  opacity: 0; animation: dropIn .45s ease forwards;
+}
+.match-chip, .clue-card {
+  background: #fff; border: 2px solid #dfe4ff; border-radius: 12px;
+  padding: 8px 12px; box-shadow: 0 4px 12px rgba(60,70,130,.08);
+  opacity: 0; animation: slideUp .5s ease forwards;
+}
+.match-chip { font-size: 13px; font-weight: 700; color: var(--text); }
+.clue-card { width: min(180px, 100%); min-height: 82px; display: grid; align-content: center; gap: 4px; }
+.clue-card b { color: var(--primary); font-size: 15px; }
+.clue-card span { color: var(--text-light); font-size: 13px; line-height: 1.5; }
+.char-main { animation: scenePop .7s cubic-bezier(.34,1.56,.64,1) both; }
+.char-bubble { opacity: 0; animation: bubbleIn .45s ease forwards; }
+.sea-rise { animation: riseUp 2s ease forwards; }
+.wave { animation: waveMove 3.5s linear infinite; }
+.w2 { animation-duration: 4.5s; opacity: .9; }
+.boat { animation: boatBob 2.2s ease-in-out infinite; }
+.star-tw { opacity: .2; animation: starTwinkle 1.6s ease-in-out infinite alternate; }
+.galaxy { animation: galaxyGlow 1.8s ease-in-out infinite alternate; }
+.rain { transform: translateY(-28px); animation: rainDrop .9s linear infinite; }
+.snow { transform: translateY(-20px); animation: snowFall 2.4s ease-in infinite; }
+.house-pop { transform-origin: center bottom; animation: housePop .7s cubic-bezier(.34,1.56,.64,1) both; }
 .lesson-line {
   display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px;
   border-radius: 12px; margin-bottom: 8px; font-size: 15px; line-height: 1.8;
@@ -440,6 +522,11 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 .inline-q.locked .option:hover { border-color: #e5e8f5; background: transparent; transform: none; }
 .inline-q.locked .option.right-ans:hover { border-color: var(--success); background: #eafaf0; }
 .inline-q.locked .option.wrong-pick:hover { border-color: var(--danger); background: #ffefef; }
+.question-demo { margin: 10px 0 14px; }
+.question-demo .lesson-title::after {
+  content: " · 看完再选";
+  color: var(--text-light); font-weight: 600; font-size: 12px;
+}
 .q-submit-row { margin-top: 14px; }
 .q-submit { font-size: 14px; padding: 8px 26px; }
 .q-feedback .q-result { animation: fadeUp .35s ease both; }
@@ -585,6 +672,54 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
 @keyframes starPop {
   to { opacity: 1; transform: scale(1); }
 }
+@keyframes captionIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scenePop {
+  from { opacity: 0; transform: scale(.72); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes bubbleIn {
+  from { opacity: 0; transform: scale(.75); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes riseUp {
+  from { transform: translateY(55px); }
+  to { transform: translateY(-128px); }
+}
+@keyframes waveMove {
+  from { transform: translateX(0); }
+  to { transform: translateX(-300px); }
+}
+@keyframes boatBob {
+  0%,100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-7px) rotate(1deg); }
+}
+@keyframes starTwinkle {
+  to { opacity: 1; transform: scale(1.35); }
+}
+@keyframes galaxyGlow {
+  to { opacity: .65; transform: scale(1.04); }
+}
+@keyframes rainDrop {
+  to { transform: translateY(190px); }
+}
+@keyframes snowFall {
+  to { transform: translateY(184px); }
+}
+@keyframes housePop {
+  from { opacity: 0; transform: scale(.75) translateY(22px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
 
 .bottom-nav { text-align: center; margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
@@ -592,4 +727,9 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   .subtitle { display: none; }
   .hero h1 { font-size: 21px; }
   .section-card { padding: 18px; }
+  .storage-panel { display: grid; }
+  .storage-actions { justify-content: flex-start; }
+  .vs-row { grid-template-columns: 1fr; }
+  .stage-visual, .scene-svg { min-height: 190px; height: 190px; }
+  .quiz-question .q-head { align-items: flex-start; }
 }
