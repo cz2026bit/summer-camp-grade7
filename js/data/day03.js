@@ -193,6 +193,20 @@ window.DAYS[3] = {
               { text: "A、C 文中根本没提;D 说老鼠自己跑了,但根本就没有老鼠。", emoji: "❌" },
               { text: "这个故事还教了我们科学态度:先观察,再下结论——和 Amy 一样棒!", emoji: "🔬" }
             ] }
+        },
+        {
+          name: "英文名著时光 · The Ugly Duckling",
+          blocks: [
+            { type: "rule", title: "📖 名著名片", html: "<b>安徒生 Andersen</b>,丹麦「童话之王」,《卖火柴的小女孩》《海的女儿》都是他写的。今天读他最温暖的一篇:丑小鸭。" },
+            { type: "reading", speakable: true, title: "The Ugly Duckling", paragraphs: [
+              "On a farm, a mother duck has six eggs. Five little ducklings are yellow and pretty, but the last one is big and grey. 'What an ugly duckling!' everyone says. The other animals laugh at him, so he runs away.",
+              "Autumn comes, then winter. The poor duckling is cold and lonely, but he never stops going on.",
+              "In spring, he sees three white swans on the river. 'They are so beautiful,' he thinks sadly. Then he looks at the water. In the water, there is a beautiful white swan — it is him!",
+              "He is not an ugly duckling. He is a young swan, and he just needed time to grow."
+            ], tip: "生词提示:duckling 小鸭 / grey 灰色的 / lonely 孤独的 / swan 天鹅 / grow 成长" },
+            { type: "text", html: "🎧 <b>名著任务</b>:听读各一遍。最后一句送给每一个「还没被看见」的人:He just needed time to grow——他只是需要时间长大。" }
+          ],
+          q: null
         }
       ]
     },

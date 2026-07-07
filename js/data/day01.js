@@ -204,6 +204,20 @@ window.DAYS[1] = {
               { text: "C 选项:原文说 The library is next to the playground,在操场旁边,不在教学楼里,错。", emoji: "📍" },
               { text: "D 选项:他说校服 cool(很酷),是喜欢,错。看到了吗?连词 so、because 就是阅读理解的藏宝图!", emoji: "🗺️" }
             ] }
+        },
+        {
+          name: "英文名著时光 · The Lion and the Mouse",
+          blocks: [
+            { type: "rule", title: "📖 名著名片", html: "<b>《伊索寓言》Aesop's Fables</b>——两千多年前古希腊流传下来的寓言集,每个小故事的结尾都藏着一个人生道理。今天读第一篇:狮子与老鼠。" },
+            { type: "reading", speakable: true, title: "The Lion and the Mouse", paragraphs: [
+              "One hot day, a lion is sleeping under a tree. A little mouse runs over his nose and wakes him up. The angry lion catches the mouse with his big paw.",
+              "'Please let me go,' says the little mouse. 'One day I will help you.' The lion laughs. 'You are too small to help me!' But he lets the mouse go.",
+              "A few days later, hunters catch the lion with a strong net. He roars and roars, but he cannot get out.",
+              "The little mouse comes and cuts the net with her sharp teeth. 'You laughed at me,' she says with a smile, 'but even a little friend can be a great friend.'"
+            ], tip: "生词提示:paw 爪子 / hunters 猎人 / net 网 / roars 吼叫 / sharp 锋利的" },
+            { type: "text", html: "🎧 <b>名著任务</b>:先点 🔊 听 Jenny 朗读一遍,再自己大声跟读一遍。想一想:最后一句话用中文怎么说?——别小看任何一个朋友!" }
+          ],
+          q: null
         }
       ]
     },

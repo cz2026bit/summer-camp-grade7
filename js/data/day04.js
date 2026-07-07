@@ -201,6 +201,20 @@ window.DAYS[4] = {
               { text: "A、D 都停在字面;C 更是无中生有。", emoji: "❌" },
               { text: "高分秘诀:阅读理解的最后一题,常考「言外之意」——问问自己,人物真正在乎的是什么?", emoji: "🎯" }
             ] }
+        },
+        {
+          name: "英文名著时光 · The Happy Prince(上)",
+          blocks: [
+            { type: "rule", title: "📖 名著名片", html: "<b>王尔德 Oscar Wilde</b>,英国作家,他的童话美得让人心疼。《快乐王子》分上下两天读,今天是上篇。" },
+            { type: "reading", speakable: true, title: "The Happy Prince (Part 1)", paragraphs: [
+              "High above the city stands the statue of the Happy Prince. His body is covered with gold, and his eyes are two bright sapphires.",
+              "One night, a little swallow stops at his feet on her way to the warm south. Suddenly, a drop of water falls on her. Is it rain? No — the Happy Prince is crying.",
+              "'When I was alive, I never saw any sad people,' says the Prince. 'Now I stand high here, and I can see all the poor people of my city.'",
+              "'Little Swallow, will you help me? Please take the ruby from my sword to a sick boy's mother. She has no money for food.'"
+            ], tip: "生词提示:statue 雕像 / sapphires 蓝宝石 / swallow 燕子 / a drop of 一滴 / ruby 红宝石 / sword 剑" },
+            { type: "text", html: "🎧 <b>名著任务</b>:听读各一遍。想一想:王子活着时从没见过悲伤,现在为什么哭了?小燕子会答应帮他吗?——明天揭晓!" }
+          ],
+          q: null
         }
       ]
     },

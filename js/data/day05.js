@@ -189,6 +189,20 @@ window.DAYS[5] = {
               { text: "A 说猫喜欢红色——文中没说,猫其实也不怎么分辨红色;C、D 都没发生。", emoji: "❌" },
               { text: "连着三关了,发现规律没有?原因题 → 找 because / so;推理题 → 回原文找证据。这两把钥匙要随身带!", emoji: "🗝️" }
             ] }
+        },
+        {
+          name: "英文名著时光 · The Happy Prince(下)",
+          blocks: [
+            { type: "rule", title: "📖 名著名片", html: "昨天,快乐王子请小燕子把红宝石送给穷人。今天读下篇——准备好纸巾。" },
+            { type: "reading", speakable: true, title: "The Happy Prince (Part 2)", paragraphs: [
+              "Night after night, the swallow stays and helps the Prince. She takes his sapphire eyes to a poor young writer and a little match girl. She picks the gold off his body, piece by piece, for the hungry children in the streets.",
+              "Winter comes. The kind swallow is too weak to fly to the south now. She kisses the Prince and falls down at his feet.",
+              "At that moment, the Prince's heart — a heart made of lead — breaks in two.",
+              "The statue is no longer beautiful. But the angels say: the broken lead heart and the little bird are the two most precious things in the whole city."
+            ], tip: "生词提示:match girl 卖火柴的小女孩 / piece by piece 一片一片地 / weak 虚弱的 / lead 铅 / precious 珍贵的" },
+            { type: "text", html: "🎧 <b>名著任务</b>:听读各一遍。王子送光了宝石和金片,变得灰暗难看——为什么天使却说,铅做的心和小鸟是全城最珍贵的东西?把你的答案讲给爸爸妈妈听。" }
+          ],
+          q: null
         }
       ]
     },

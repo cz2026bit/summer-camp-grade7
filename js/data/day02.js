@@ -194,6 +194,20 @@ window.DAYS[2] = {
               { text: "A 是弟弟画画的事,和睡觉无关;C 是爸妈做饭;D 说他四岁,都不是原因。", emoji: "❌" },
               { text: "记住:看到 so、because,就像看到藏宝图上的红叉,答案就埋在那里!", emoji: "🗺️" }
             ] }
+        },
+        {
+          name: "英文名著时光 · The North Wind and the Sun",
+          blocks: [
+            { type: "rule", title: "📖 名著名片", html: "继续读<b>《伊索寓言》</b>。今天这篇只有 100 来个词,却被无数演讲家引用:北风与太阳,谁更强大?" },
+            { type: "reading", speakable: true, title: "The North Wind and the Sun", paragraphs: [
+              "The North Wind and the Sun have a fight. 'I am stronger!' says the Wind. 'Let us see,' says the Sun. 'Look at that man in a warm coat. Who can take his coat off?'",
+              "The Wind blows and blows. But the harder he blows, the tighter the man holds his coat. At last, the Wind gives up.",
+              "Then the Sun comes out and shines warmly. The man feels hot. Soon he takes off his coat and sits under a tree.",
+              "'You see,' says the Sun, 'warmth works better than force.'"
+            ], tip: "生词提示:blows 吹 / the harder…the tighter 越用力…抱得越紧 / gives up 放弃 / warmth 温暖 / force 蛮力" },
+            { type: "text", html: "🎧 <b>名著任务</b>:听一遍,跟读一遍。这个故事在说:说服别人时,温暖比强迫更有力量。生活里你见过这样的例子吗?" }
+          ],
+          q: null
         }
       ]
     },

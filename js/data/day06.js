@@ -192,6 +192,20 @@ window.DAYS[6] = {
               { text: "A 灯坏了、B 房间暗、D 爱买灯,原文统统没说——不选没有证据的选项!", emoji: "❌" },
               { text: "六关下来你已经掌握阅读三板斧:找 so/because、盯转折、看 secret/but 后面的解释句。继续保持!", emoji: "🗡️" }
             ] }
+        },
+        {
+          name: "英文名著时光 · Alice in Wonderland",
+          blocks: [
+            { type: "rule", title: "📖 名著名片", html: "<b>刘易斯·卡罗尔 Lewis Carroll</b>《爱丽丝漫游奇境》——一只揣着怀表的兔子,带出了世界上最著名的奇幻冒险。" },
+            { type: "reading", speakable: true, title: "Down the Rabbit Hole", paragraphs: [
+              "Alice is sitting by the river with her sister. She is bored. Suddenly, a white rabbit runs past her. The rabbit takes a watch out of its pocket and says, 'Oh dear! I shall be late!'",
+              "A rabbit with a watch? Alice jumps up and runs after it. The rabbit goes down a big rabbit hole, and Alice follows — down, down, down.",
+              "The hole is so deep that she has time to look around while falling. There are cupboards and maps on the walls.",
+              "'After a fall like this, stairs will be nothing!' she thinks. Then — bump! She lands on some dry leaves, and a wonderful adventure begins."
+            ], tip: "生词提示:bored 无聊的 / pocket 口袋 / hole 洞 / cupboards 柜子 / bump 砰 / adventure 冒险" },
+            { type: "text", html: "🎧 <b>名著任务</b>:听读各一遍。爱丽丝的冒险从一颗好奇心开始——如果是你,会跟着兔子跳下去吗?六天名著之旅完成,恭喜你读完了 6 个经典故事!📚" }
+          ],
+          q: null
         }
       ]
     },
