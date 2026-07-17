@@ -556,6 +556,130 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   50% { transform: translateX(-50%) scale(.78); opacity: .3; }
 }
 
+/* ===== 名师讲解台(默认讲解场景 2.0)===== */
+.ex-stage { width: 100%; height: 100%; position: relative; overflow: hidden; }
+/* 网格黑板背景:淡蓝点阵,缓慢平移 */
+.ex-grid {
+  position: absolute; inset: -20px;
+  background-image: radial-gradient(rgba(91,110,245,.13) 1.4px, transparent 1.5px);
+  background-size: 22px 22px;
+  animation: exGridPan 12s linear infinite; opacity: .8;
+}
+@keyframes exGridPan { to { background-position: 22px 22px; } }
+/* 聚光灯来回扫 */
+.ex-spot {
+  position: absolute; top: -40%; left: -10%; width: 55%; height: 180%;
+  background: radial-gradient(ellipse at center, rgba(255,240,200,.55), transparent 68%);
+  filter: blur(6px); mix-blend-mode: multiply; pointer-events: none;
+  animation: exSpot 7s ease-in-out infinite alternate;
+}
+@keyframes exSpot { from { transform: translateX(0) rotate(-6deg); } to { transform: translateX(120%) rotate(6deg); } }
+/* 粉笔灰上飘 */
+.ex-dust {
+  position: absolute; bottom: 6px; width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(255,255,255,.9); box-shadow: 0 0 5px rgba(255,255,255,.9);
+  animation: exDust linear infinite;
+}
+@keyframes exDust {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  20% { opacity: .9; }
+  100% { transform: translateY(-160px) translateX(14px) scale(.3); opacity: 0; }
+}
+.ex-row {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; align-items: center; gap: 6px; padding: 8px 16px 8px 6px;
+}
+/* 讲师区 */
+.ex-presenter {
+  position: relative; flex: 0 0 34%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.ex-presenter .sw-halo { width: 128px; height: 128px; }
+.ex-presenter .sw-halo2 { width: 164px; height: 164px; }
+.ex-presenter .sw-blob {
+  width: 130px; height: 130px; left: 50%; top: 50%;
+  transform: translate(-50%, -50%); margin: 0;
+}
+.ex-presenter .sw-ground { bottom: 26px; }
+.ex-avatar {
+  position: relative; z-index: 2; font-size: 76px;
+  animation: swEmojiIn .8s cubic-bezier(.34,1.56,.64,1) both, swFloat 3.4s .8s ease-in-out infinite;
+  filter: drop-shadow(0 10px 18px rgba(60,70,130,.28));
+}
+.ex-pointer {
+  position: absolute; z-index: 3; right: 6px; bottom: 40px; font-size: 30px;
+  transform-origin: bottom left;
+  animation: exPoint 2.4s ease-in-out .9s infinite;
+}
+@keyframes exPoint {
+  0%,100% { transform: rotate(24deg) translateY(0); }
+  50% { transform: rotate(6deg) translateY(-6px); }
+}
+/* 黑板卡片区 */
+.ex-board {
+  position: relative; flex: 1 1 auto; height: 100%; min-width: 0;
+  display: flex; flex-direction: column; align-items: flex-start;
+  justify-content: center; gap: 10px; padding-right: 6px;
+}
+.ex-board-empty { align-items: center; justify-content: center; }
+.ex-board-empty .sw-orbits { position: relative; width: 0; height: 0; }
+.ex-tip {
+  position: absolute; bottom: 22px; font-size: 13px; font-weight: 800; color: #7c86e8;
+  animation: exFade .6s .3s both;
+}
+.ex-ribbon {
+  position: absolute; top: 2px; right: 4px; z-index: 3;
+  font-size: 11px; font-weight: 900; color: #fff; letter-spacing: 1px;
+  background: linear-gradient(90deg, #ff8a3d, #ef5b7b); padding: 3px 12px;
+  border-radius: 0 10px 0 12px; box-shadow: 0 4px 10px rgba(239,91,123,.35);
+  animation: exFade .5s .2s both;
+}
+@keyframes exFade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.ex-chip {
+  position: relative; max-width: 100%;
+  padding: 7px 14px 8px; border-radius: 12px;
+  background: #fff; border: 2px solid #e4e8fb;
+  border-left-width: 6px;
+  box-shadow: 0 6px 16px rgba(60,70,130,.14);
+  font-weight: 900; color: #2b2d42;
+  animation: exChipIn .6s cubic-bezier(.3,1.5,.5,1) both;
+}
+.ex-chip-tx {
+  display: block; font-size: 20px; line-height: 1.25; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 240px;
+}
+/* 不同类别用不同强调色 */
+.ex-chip-math { border-color: #cdd6ff; border-left-color: #5b6ef5; color: #3a45b8; }
+.ex-chip-unit { border-color: #ffe0c2; border-left-color: #ff8a3d; color: #d2691e; }
+.ex-chip-title { border-color: #ffd3de; border-left-color: #ef5b7b; color: #c23a5c; }
+.ex-chip-quote { border-color: #ffe6a8; border-left-color: #f0a500; color: #a67102; }
+.ex-chip-title .ex-chip-tx::before { content: "《"; }
+.ex-chip-title .ex-chip-tx::after { content: "》"; }
+.ex-chip-quote .ex-chip-tx::before,
+.ex-chip-quote .ex-chip-tx::after { content: "\201C"; }
+.ex-chip-quote .ex-chip-tx::after { content: "\201D"; }
+.ex-chip-en { border-color: #c9eee0; border-left-color: #26b8a5; color: #148f7f; font-style: italic; }
+@keyframes exChipIn {
+  from { opacity: 0; transform: translateX(38px) scale(.7) rotate(2deg); }
+  to { opacity: 1; transform: none; }
+}
+/* 从讲师指向卡片的连接虚线 */
+.ex-connect {
+  position: absolute; left: -22px; top: 50%; width: 20px; height: 0;
+  border-top: 2.5px dashed #b8bede; transform-origin: right center;
+  animation: exConnect .4s ease both;
+}
+@keyframes exConnect { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+/* 第一张卡片下方手绘下划线 */
+.ex-underline {
+  position: absolute; left: 8px; right: 8px; bottom: -6px; width: calc(100% - 16px); height: 11px;
+}
+.ex-underline path {
+  stroke-dasharray: 180; stroke-dashoffset: 180;
+  animation: exDraw .7s ease .5s forwards;
+}
+@keyframes exDraw { to { stroke-dashoffset: 0; } }
+
 /* 数轴 2.0 */
 .nl2-trail { fill: rgba(255,138,61,.5); animation: nlTrailFade .7s ease-out forwards; }
 @keyframes nlTrailFade { to { opacity: 0; r: 2; } }

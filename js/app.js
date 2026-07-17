@@ -677,24 +677,88 @@
   // ================================================================
   // 动画场景库(SVG 可视化动画)
   // ================================================================
+  // 从一句讲解文本里抽取最"实"的信息碎片,做成黑板上的重点粉笔卡片
+  // 优先级:书名/引文 > 算式 > 绝对值/幂/带单位数字 > 英文单词/短语
+  function extractChalkChips(text) {
+    text = String(text || "");
+    const out = [];
+    const seen = new Set();
+    const add = (v, kind) => {
+      v = String(v).replace(/\s+/g, " ").trim();
+      if (!v) return;
+      // 单个孤立数字(如"1""3")信息量低,跳过;算式/带单位的保留
+      if (/^[−-]?\d+$/.test(v) && v.replace(/[−-]/, "").length < 2) return;
+      if (v.length < 1 || v.length > 20) return;
+      const k = kind + "|" + v.toLowerCase();
+      if (seen.has(k)) return;
+      // 避免同一碎片以不同类别重复
+      if ([...seen].some(s => s.split("|")[1] === v.toLowerCase())) return;
+      seen.add(k);
+      out.push({ v, kind });
+    };
+    // 1. 书名号《…》与引文「…」『…』"…"
+    (text.match(/《[^》]{1,14}》/g) || []).forEach(s => add(s.replace(/[《》]/g, ""), "title"));
+    (text.match(/[「『]([^」』]{1,14})[」』]/g) || []).forEach(s => add(s.replace(/[「『」』]/g, ""), "quote"));
+    (text.match(/[""]([^""]{1,14})[""]/g) || []).forEach(s => add(s.replace(/[""]/g, ""), "quote"));
+    // 2. 算式:含运算符且两端有数字/括号的连续片段(如 22÷2、1/2 + 1/3、5 − 3、3(x−1))
+    (text.match(/[−+]?\(?[0-9|][0-9\s+\-−×÷*/=().|xXπ²³⁴⁵⁶⁷⁸⁹⁰¹∕]*[+\-−×÷*/=][0-9\s+\-−×÷*/=().|xXπ²³⁴⁵⁶⁷⁸⁹⁰¹∕]*[0-9)|]/g) || [])
+      .forEach(s => { if (/\d/.test(s) && /[+\-−×÷*/=]/.test(s)) add(s, "math"); });
+    // 3. 绝对值 |−7|、幂 2⁶、带单位数字 22℃/50%/14分钟
+    (text.match(/\|[−-]?\d+\|/g) || []).forEach(s => add(s, "math"));
+    (text.match(/[−-]?\d[²³⁴⁵⁶⁷⁸⁹]/g) || []).forEach(s => add(s, "math"));
+    (text.match(/[−-]?\d+(?:\.\d+)?(?:℃|°|%|元|分钟|米|倍|层|本|岁|次|个|千米|厘米)/g) || []).forEach(s => add(s, "unit"));
+    // 4. 英文单词/短语(英语课用)
+    (text.match(/[A-Za-z][A-Za-z'’.\-]{1,15}/g) || []).forEach(s => { if (s.length >= 2) add(s, "en"); });
+    return out.slice(0, 3);
+  }
+
   const SCENES = {
     // 默认:发光光斑 + 大表情漂浮 + 星光点缀
+    // 名师讲解台:从讲解文本自动提取关键信息碎片(算式/数字/书名/引文/英文),
+    // 做成粉笔卡片在黑板上逐个弹出 + 连线 + 手绘下划线,让动画真正承载讲解内容
     emoji(el, p, step) {
       const em = p.emoji || step.emoji || "💡";
-      // 环绕星尘:沿圆周均匀分布,各自公转 + 明灭
-      const N = 7;
-      const orbit = Array.from({ length: N }, (_, i) => {
-        const ang = (i / N) * 360;
-        const glyph = ["✦", "✧", "⭐", "✨", "❋", "✦", "✧"][i % 7];
-        return `<span class="sw-orbit" style="--ang:${ang}deg;--orbR:${74 + (i % 3) * 12}px;animation-delay:${(i * .28).toFixed(2)}s">
-          <span class="sw-orbit-star" style="animation-delay:${(i * .2).toFixed(2)}s">${glyph}</span></span>`;
-      }).join("");
-      el.innerHTML = `<div class="scene-wrap sw-emoji-wrap">
-        <div class="sw-blob"></div><div class="sw-blob sw-blob2"></div>
-        <div class="sw-halo"></div><div class="sw-halo sw-halo2"></div>
-        <div class="sw-orbits">${orbit}</div>
-        <div class="sw-emoji">${em}</div>
-        <div class="sw-ground"></div>
+      const chips = extractChalkChips(step && step.text || "");
+      // 网格黑板 + 聚光 + 粉笔灰
+      const dust = Array.from({ length: 6 }, (_, i) =>
+        `<span class="ex-dust" style="left:${8 + i * 15 + Math.random() * 6}%;animation-delay:${(i * .7).toFixed(2)}s;animation-duration:${(4 + Math.random() * 2.5).toFixed(1)}s"></span>`).join("");
+      let board;
+      if (chips.length) {
+        board = `<div class="ex-board">
+          <div class="ex-ribbon">重点</div>
+          ${chips.map((c, i) => `
+            <div class="ex-chip ex-chip-${c.kind}" style="animation-delay:${(.5 + i * .55).toFixed(2)}s">
+              <span class="ex-connect" style="animation-delay:${(.35 + i * .55).toFixed(2)}s"></span>
+              <span class="ex-chip-tx">${esc(c.v)}</span>
+              ${i === 0 ? `<svg class="ex-underline" viewBox="0 0 120 12" preserveAspectRatio="none"><path d="M4,7 Q40,1 60,6 T116,5" stroke="#ffd93d" stroke-width="3.4" fill="none" stroke-linecap="round"/></svg>` : ""}
+            </div>`).join("")}
+        </div>`;
+      } else {
+        // 没抓到关键碎片时,退回环绕星尘装饰,同样有层次
+        const N = 7;
+        const orbit = Array.from({ length: N }, (_, i) => {
+          const ang = (i / N) * 360;
+          const glyph = ["✦", "✧", "⭐", "✨", "❋", "✦", "✧"][i % 7];
+          return `<span class="sw-orbit" style="--ang:${ang}deg;--orbR:${70 + (i % 3) * 12}px;animation-delay:${(i * .28).toFixed(2)}s">
+            <span class="sw-orbit-star" style="animation-delay:${(i * .2).toFixed(2)}s">${glyph}</span></span>`;
+        }).join("");
+        board = `<div class="ex-board ex-board-empty"><div class="sw-orbits">${orbit}</div>
+          <div class="ex-tip">🎙️ 名师讲解中…</div></div>`;
+      }
+      el.innerHTML = `<div class="scene-wrap ex-stage">
+        <div class="ex-grid"></div>
+        <div class="ex-spot"></div>
+        ${dust}
+        <div class="ex-row">
+          <div class="ex-presenter">
+            <div class="sw-halo"></div><div class="sw-halo sw-halo2"></div>
+            <div class="sw-blob"></div>
+            <div class="ex-avatar">${em}</div>
+            <div class="ex-pointer">📏</div>
+            <div class="sw-ground"></div>
+          </div>
+          ${board}
+        </div>
       </div>`;
     },
 
