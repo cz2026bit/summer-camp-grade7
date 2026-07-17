@@ -1088,3 +1088,78 @@ main { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
   .quiz-sticky { bottom: 8px; }
   .quiz-question .q-head { align-items: flex-start; }
 }
+
+/* ================================================================
+   全部 40 关通关庆典
+   ================================================================ */
+.allclear-overlay {
+  position: fixed; inset: 0; z-index: 4000;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; padding: 20px;
+  animation: acFadeIn .5s ease both;
+}
+.ac-sky {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 120%, #2b2a5e 0%, #171638 55%, #0b0a22 100%);
+}
+@keyframes acFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.ac-card {
+  position: relative; z-index: 2; text-align: center; color: #fff;
+  max-width: 520px; width: 100%;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 28px; padding: 34px 26px 30px;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+  animation: acCardIn .8s cubic-bezier(.2, 1.4, .4, 1) .15s both;
+}
+@keyframes acCardIn { from { opacity: 0; transform: translateY(46px) scale(.86); } to { opacity: 1; transform: none; } }
+.ac-trophy {
+  font-size: 92px; line-height: 1;
+  filter: drop-shadow(0 10px 26px rgba(255, 217, 61, .55));
+  animation: acTrophy 1.6s ease-in-out .4s infinite alternate;
+}
+@keyframes acTrophy { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-14px) rotate(4deg); } }
+.ac-ribbon {
+  display: inline-block; margin-top: 12px; padding: 6px 18px;
+  border-radius: 999px; font-size: 14px; font-weight: 700; letter-spacing: 1px;
+  background: linear-gradient(90deg, #ff8a3d, #ef5b7b);
+  box-shadow: 0 6px 18px rgba(239, 91, 123, .4);
+}
+.ac-title {
+  margin: 14px 0 6px; font-size: 44px; font-weight: 900;
+  background: linear-gradient(90deg, #ffd93d, #ff8a3d, #ef5b7b, #a78bfa, #5b6ef5);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  background-size: 300% 100%;
+  animation: acShine 3s linear infinite;
+}
+@keyframes acShine { to { background-position: 300% 0; } }
+.ac-sub { font-size: 16px; line-height: 1.7; color: rgba(255, 255, 255, .88); }
+.ac-stars { margin: 12px 0 4px; font-size: 30px; }
+.ac-stars span { display: inline-block; margin: 0 3px; opacity: 0; transform: scale(0); animation: acStarPop .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes acStarPop { to { opacity: 1; transform: scale(1); } }
+.ac-stats { display: flex; justify-content: center; gap: 14px; margin: 14px 0 6px; }
+.ac-stat {
+  min-width: 84px; padding: 10px 12px; border-radius: 16px;
+  background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .16);
+}
+.ac-stat b { display: block; font-size: 22px; color: #ffd93d; }
+.ac-stat span { font-size: 12px; color: rgba(255, 255, 255, .75); }
+.ac-line { margin: 10px 0 18px; font-size: 15px; color: rgba(255, 255, 255, .92); }
+.ac-fw { position: absolute; z-index: 1; width: 0; height: 0; }
+.ac-fw i {
+  position: absolute; left: 0; top: 0; width: 7px; height: 7px; border-radius: 50%;
+  animation: acBurst 1.15s cubic-bezier(.1, .8, .3, 1) both;
+}
+@keyframes acBurst {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 26px)) scale(.25); opacity: 0; }
+}
+@media (max-width: 560px) {
+  .ac-card { padding: 26px 16px 24px; }
+  .ac-trophy { font-size: 72px; }
+  .ac-title { font-size: 34px; }
+  .ac-stats { gap: 8px; }
+  .ac-stat { min-width: 72px; }
+}

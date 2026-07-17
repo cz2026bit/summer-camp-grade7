@@ -117,7 +117,13 @@
   // ================================================================
   const TTS = {
     voices: [], zhVoice: null, enVoice: null, token: 0,
-    prefs: (function () { try { return JSON.parse(localStorage.getItem(VOICE_KEY)) || {}; } catch (e) { return {}; } })(),
+    prefs: (function () {
+      let p = {};
+      try { p = JSON.parse(localStorage.getItem(VOICE_KEY)) || {}; } catch (e) { p = {}; }
+      // 一次性迁移:默认(并把老用户重置)为微软真人语音;之后用户再手动改才生效
+      if (!p.msDefault) { p.engine = "ms"; p.msDefault = 1; }
+      return p;
+    })(),
     savePrefs() { localStorage.setItem(VOICE_KEY, JSON.stringify(this.prefs)); },
     // 给声音打分:神经/自然/在线人声 > 高质量系统声 > 普通系统声
     scoreZh(v) {
@@ -596,6 +602,68 @@
       setTimeout(() => p.remove(), 2600);
     }
   }
+  // ---------- 全部 40 关通关庆典 ----------
+  const ALL_CLEAR_SPEECH = "恭喜恩恩!四十关全部通关!你用四十天的坚持和智慧,走完了整个小升初冒险地图。你是真正的闯关王者,开学一定惊艳所有人!";
+  function showAllClear() {
+    if (document.querySelector(".allclear-overlay")) return;
+    const store = loadStore();
+    const xp = getXP(), lv = levelOf(xp);
+    const badgeCount = (store.badges || []).length;
+    const overlay = document.createElement("div");
+    overlay.className = "allclear-overlay";
+    overlay.innerHTML = `
+      <div class="ac-sky"></div>
+      <div class="ac-card">
+        <div class="ac-trophy">🏆</div>
+        <div class="ac-ribbon">40 / 40 关 · 全部通关</div>
+        <h1 class="ac-title">恭喜恩恩!</h1>
+        <div class="ac-sub">你用 40 天的坚持和智慧,走完了整个小升初冒险地图!</div>
+        <div class="ac-stars">${Array.from({ length: 5 }, (_, i) => `<span style="animation-delay:${.9 + i * .18}s">⭐</span>`).join("")}</div>
+        <div class="ac-stats">
+          <div class="ac-stat"><b>Lv.${lv}</b><span>最终等级</span></div>
+          <div class="ac-stat"><b>${xp}</b><span>总 XP</span></div>
+          <div class="ac-stat"><b>${badgeCount}</b><span>徽章</span></div>
+        </div>
+        <div class="ac-line">真正的闯关王者 · 开学惊艳所有人 💪</div>
+        <button class="btn btn-success btn-big" id="ac-close">🎉 太棒啦!</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    // 持续放烟花
+    const colors = ["#ffd93d", "#ff8a3d", "#ef5b7b", "#5b6ef5", "#26b8a5", "#a78bfa", "#ffffff"];
+    function firework() {
+      if (!overlay.isConnected) return;
+      const fw = document.createElement("div");
+      fw.className = "ac-fw";
+      fw.style.left = (8 + Math.random() * 84) + "%";
+      fw.style.top = (6 + Math.random() * 55) + "%";
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < 22; i++) {
+        const s = document.createElement("i");
+        const ang = (i / 22) * Math.PI * 2;
+        const dist = 55 + Math.random() * 65;
+        s.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+        s.style.setProperty("--dy", Math.sin(ang) * dist + "px");
+        s.style.background = color;
+        fw.appendChild(s);
+      }
+      overlay.appendChild(fw);
+      setTimeout(() => fw.remove(), 1300);
+    }
+    firework(); firework();
+    const timer = setInterval(() => { firework(); if (Math.random() < .5) firework(); }, 550);
+    confetti(70);
+    const confTimer = setInterval(() => { if (overlay.isConnected) confetti(18); }, 2200);
+    SFX.badge();
+    setTimeout(() => { try { SFX.badge(); } catch (e) {} }, 700);
+    TTS.stop();
+    setTimeout(() => TTS.speak(ALL_CLEAR_SPEECH, "zh"), 400);
+    overlay.querySelector("#ac-close").onclick = () => {
+      clearInterval(timer); clearInterval(confTimer);
+      TTS.stop();
+      overlay.remove();
+    };
+  }
+
   function floatTip(text, x, y, cls) {
     const t = document.createElement("div");
     t.className = "float-tip " + (cls || "");
@@ -1041,6 +1109,7 @@
           <div class="progress-bar"><div style="width:0%" data-target="${pct}%"></div></div>
           <div class="progress-label">冒险地图已探索 ${doneCount} / ${TOTAL_DAYS} 关(${pct}%)</div>
         </div>
+        ${doneCount >= TOTAL_DAYS ? `<div style="text-align:center;margin-top:14px"><button class="btn btn-success" id="btn-allclear">🎆 全部通关!重看庆典</button></div>` : ""}
       </div>`;
 
     let curPhase = "";
@@ -1085,6 +1154,8 @@
     app.querySelectorAll(".day-card[data-day]").forEach(card => {
       card.addEventListener("click", () => showHonestyGate(parseInt(card.dataset.day, 10)));
     });
+    const acBtn = document.getElementById("btn-allclear");
+    if (acBtn) acBtn.onclick = showAllClear;
     const exportBtn = document.getElementById("btn-export-save");
     const importBtn = document.getElementById("btn-import-save");
     const fileInput = document.getElementById("save-file");
@@ -1713,6 +1784,11 @@
 
     document.getElementById("btn-export").onclick = () => exportImage(day, result);
     document.getElementById("btn-go-home").onclick = renderHome;
+
+    // 全部 40 关通关 → 播放庆典动画(每次通关最后一关都会庆祝)
+    const store = loadStore();
+    const doneCount = Object.keys(store).filter(k => /^day\d+$/.test(k)).length;
+    if (doneCount >= TOTAL_DAYS) setTimeout(showAllClear, 1600);
   }
 
   // ================================================================
