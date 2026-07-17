@@ -681,12 +681,20 @@
     // 默认:发光光斑 + 大表情漂浮 + 星光点缀
     emoji(el, p, step) {
       const em = p.emoji || step.emoji || "💡";
-      const sparks = Array.from({ length: 6 }, (_, i) =>
-        `<span class="sw-spark" style="left:${12 + Math.random() * 76}%;top:${10 + Math.random() * 70}%;animation-delay:${i * .35}s">✦</span>`).join("");
+      // 环绕星尘:沿圆周均匀分布,各自公转 + 明灭
+      const N = 7;
+      const orbit = Array.from({ length: N }, (_, i) => {
+        const ang = (i / N) * 360;
+        const glyph = ["✦", "✧", "⭐", "✨", "❋", "✦", "✧"][i % 7];
+        return `<span class="sw-orbit" style="--ang:${ang}deg;--orbR:${74 + (i % 3) * 12}px;animation-delay:${(i * .28).toFixed(2)}s">
+          <span class="sw-orbit-star" style="animation-delay:${(i * .2).toFixed(2)}s">${glyph}</span></span>`;
+      }).join("");
       el.innerHTML = `<div class="scene-wrap sw-emoji-wrap">
         <div class="sw-blob"></div><div class="sw-blob sw-blob2"></div>
-        ${sparks}
+        <div class="sw-halo"></div><div class="sw-halo sw-halo2"></div>
+        <div class="sw-orbits">${orbit}</div>
         <div class="sw-emoji">${em}</div>
+        <div class="sw-ground"></div>
       </div>`;
     },
 
